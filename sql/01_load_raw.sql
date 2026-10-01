@@ -1,0 +1,34 @@
+-- Load Udith's generated CSVs (data/) as-is into RAW_* tables.
+-- 02_canonical.sql maps them onto the data contract the rules use.
+--
+-- Upload first, from the repo root:
+--   PUT file://data/*.csv @RAW_DATA AUTO_COMPRESS=TRUE OVERWRITE=TRUE;
+
+CREATE STAGE IF NOT EXISTS RAW_DATA;
+CREATE OR REPLACE FILE FORMAT CSV_HEADER
+    TYPE = CSV PARSE_HEADER = TRUE FIELD_OPTIONALLY_ENCLOSED_BY = '"' EMPTY_FIELD_AS_NULL = TRUE;
+
+CREATE OR REPLACE TABLE RAW_CUSTOMERS (
+    customer_id STRING, full_name STRING, customer_type STRING, country STRING,
+    onboarding_date DATE, kyc_risk_rating STRING, pep_flag BOOLEAN,
+    business_sector STRING, expected_monthly_volume NUMBER(18,2));
+CREATE OR REPLACE TABLE RAW_ACCOUNTS (
+    account_id STRING, customer_id STRING, account_type STRING, open_date DATE,
+    status STRING, currency STRING);
+CREATE OR REPLACE TABLE RAW_TRANSACTIONS (
+    txn_id STRING, account_id STRING, counterparty_account STRING, counterparty_country STRING,
+    amount NUMBER(18,2), currency STRING, txn_type STRING, channel STRING,
+    txn_timestamp TIMESTAMP_NTZ, description STRING);
+CREATE OR REPLACE TABLE RAW_LABELS (txn_id STRING, account_id STRING, typology_type STRING);
+CREATE OR REPLACE TABLE RAW_HIGH_RISK_COUNTRIES (country_code STRING);
+
+COPY INTO RAW_CUSTOMERS    FROM @RAW_DATA/customers.csv.gz    FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+COPY INTO RAW_ACCOUNTS     FROM @RAW_DATA/accounts.csv.gz     FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+COPY INTO RAW_TRANSACTIONS FROM @RAW_DATA/transactions.csv.gz FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+COPY INTO RAW_LABELS       FROM @RAW_DATA/ground_truth_labels.csv.gz FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+COPY INTO RAW_HIGH_RISK_COUNTRIES FROM @RAW_DATA/reference_high_risk_countries.csv.gz FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+SELECT 'customers', COUNT(*) FROM RAW_CUSTOMERS UNION ALL
+SELECT 'accounts', COUNT(*) FROM RAW_ACCOUNTS UNION ALL
+SELECT 'transactions', COUNT(*) FROM RAW_TRANSACTIONS UNION ALL
+SELECT 'labels', COUNT(*) FROM RAW_LABELS;   -- expect 800 / 1043 / 41492 / 168

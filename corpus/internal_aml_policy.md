@@ -22,7 +22,7 @@
 3.4 Severity is HIGH; CRITICAL if the pattern repeats across 2 or more linked accounts.
 
 ## 4. Velocity anomalies
-4.1 **Rule VELOCITY:** raise an alert when an account's transaction count or value in any 24-hour period exceeds **5 times its trailing 90-day daily average**, with a minimum of $25,000.
+4.1 **Rule VELOCITY:** raise an alert when an account makes **4 or more transactions within any 24-hour period** whose combined value exceeds **5 times its trailing 90-day daily average**, with a minimum of $10,000.
 4.2 Severity is MEDIUM; HIGH if the account is less than 90 days old or was dormant (no activity for 180+ days) before the spike.
 
 ## 5. Layering and round-tripping
@@ -30,6 +30,7 @@
 5.2 **Rule ROUND_TRIP_CYCLE:** raise an alert when funds of **$10,000 or more** leave an account and return to it through **2 to 4 time-ordered transfers within 7 days**, with each hop carrying at least 80% of the previous hop.
 5.3 Severity is MEDIUM for a 2-hop round trip and HIGH for 3 or more hops.
 5.4 The analyst must document the business purpose of each intermediary account, or its absence.
+5.5 **Rule PASS_THROUGH:** raise an alert when an account receives **$50,000 or more** and, within **72 hours**, sends out **2 or more** payments totalling **at least 50%** of that amount. Severity is HIGH. Rapid pass-through with no business purpose is a primary layering indicator (FATF, *Professional Money Laundering*).
 
 ## 6. High-risk geographies
 6.1 High-risk jurisdictions are those on the FATF "Call for Action" list (black list) and "Jurisdictions under Increased Monitoring" (grey list), refreshed quarterly.

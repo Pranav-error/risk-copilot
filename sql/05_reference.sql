@@ -18,3 +18,9 @@ INSERT INTO FATF_JURISDICTIONS VALUES
 ('ZA','South Africa','GREY'), ('SS','South Sudan','GREY'), ('SY','Syria','GREY'),
 ('TZ','Tanzania','GREY'), ('VE','Venezuela','GREY'), ('VN','Vietnam','GREY'),
 ('VG','British Virgin Islands','GREY'), ('YE','Yemen','GREY');
+
+-- The bank's own high-risk list (raw reference) on top of FATF: countries it names that
+-- FATF doesn't list are added as GREY. Needs 01_load_raw.sql.
+INSERT INTO FATF_JURISDICTIONS (COUNTRY_CODE, COUNTRY_NAME, LIST)
+SELECT country_code, country_code, 'GREY' FROM RAW_HIGH_RISK_COUNTRIES
+WHERE country_code NOT IN (SELECT COUNTRY_CODE FROM FATF_JURISDICTIONS);

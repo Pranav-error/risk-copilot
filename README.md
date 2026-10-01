@@ -10,7 +10,8 @@ explains and drafts, never decides what is fraud.**
 
 | Path | What | Owner |
 |---|---|---|
-| `data/` | Synthetic data generator + load into Snowflake | Udith |
+| `data/` | Generated synthetic data (see `data/README.md`) | Udith |
+| `sql/01_load_raw.sql`, `02_canonical.sql` | Load CSVs as-is → map onto the data contract | Pranav |
 | `sql/05_reference.sql` | FATF black/grey list (`FATF_JURISDICTIONS`) | Pranav |
 | `sql/10_alerts_and_cycle_proc.sql` | Shared `ALERTS` table + registers the cycle proc | Pranav |
 | `sql/20_detection_rules.sql` | Structuring, velocity, geo-risk rules; `ALERT_QUEUE`, `ALERT_TXNS` views | Pranav |
@@ -26,20 +27,30 @@ explains and drafts, never decides what is fraud.**
 ## Run order (once data is loaded)
 
 ```
-05_reference → 10_alerts_and_cycle_proc → 20_detection_rules → 40_cortex_search → 50_findings
+01_load_raw → 02_canonical → 05_reference → 10_alerts_and_cycle_proc → 20_detection_rules → 40_cortex_search → 50_findings
 then in CoCo:  $aml-detect   →   $aml-investigate <id>   →   $sar-draft <id>
 ```
 
 ## Tests (no Snowflake needed)
 
 ```
-python3 detection/cycles.py                         # cycle detector self-check
-pip install duckdb && python3 tests/test_rules_duckdb.py   # all rules + evaluation on planted data
+pip install duckdb
+python3 detection/cycles.py           # cycle detector self-check
+python3 tests/test_rules_duckdb.py    # every rule on planted typologies (asserts case recall 1.0)
+python3 tests/run_on_data.py          # full pipeline on the real generated data in data/
 ```
 
-On planted data (35K txns, 268 labelled): every rule recall 1.0; precision 1.0, velocity 0.993.
-`TYPOLOGY_PRECISION` for velocity is 0.14 because a spike on a cycle or FATF account is a real
-catch filed under another rule. Re-measure on the real synthetic set.
+On `data/` (41,492 txns, 168 labelled):
+
+| Rule | Alerts | Precision | Cases caught |
+|---|---|---|---|
+| STRUCTURING | 12 | 1.00 | 12 / 12 |
+| VELOCITY | 32 | 0.75 | 12 / 12 |
+| PASS_THROUGH | 14 | 0.93 | 10 / 11 |
+| ROUND_TRIP_CYCLE | 4 | 1.00 | 4 cycles (12 accounts) |
+| GEO_RISK | 6 | 1.00 | 6 / 6 |
+
+Thresholds were calibrated on this file; see `data/README.md`.
 
 ## Data contract (all detection, the semantic model and the app depend on these names)
 
@@ -53,18 +64,19 @@ TRANSACTIONS (TXN_ID, FROM_ACCOUNT_ID, TO_ACCOUNT_ID, AMOUNT, CURRENCY, CHANNEL,
              -- cash deposit = FROM NULL, TO the account, CHANNEL 'CASH'
              -- CHANNEL in (CASH, WIRE, ACH, CARD, INTERNAL)
              -- COUNTERPARTY_COUNTRY = ISO-2 code (US, GB, IR...), matches FATF_JURISDICTIONS
-TXN_LABELS   (TXN_ID, TYPOLOGY)   -- ground truth; detection rules must never read this table
+TXN_LABELS   (TXN_ID, ACCOUNT_ID, TYPOLOGY)   -- ground truth; detection rules must never read this table
 ALERTS       -- see sql/10_alerts_and_cycle_proc.sql
 ```
 
-Seeded typologies (~30 cases each): `STRUCTURING`, `VELOCITY`, `LAYERING`, `GEO_RISK`, `ROUND_TRIP`.
+Typologies: `STRUCTURING`, `VELOCITY`, `LAYERING` (pass-through), `GEO_RISK`, `ROUND_TRIP` (cycles).
 
 ## Detection rules → policy clauses
 
 | Rule | Policy clause | Implementation |
 |---|---|---|
 | STRUCTURING | §3.3 | SQL: ≥3 cash deposits $8K–$10K in 7 days, total > $10K |
-| VELOCITY | §4.1 | SQL: day value > 5× trailing 90-day daily average, min $25K |
+| VELOCITY | §4.1 | SQL: 4+ txns in a rolling 24h, value > 5× trailing 90-day daily avg, min $10K |
+| PASS_THROUGH | §5.5 | SQL: inflow ≥ $50K, then 2+ outflows ≥ 50% of it within 72h |
 | GEO_RISK | §6.2 | SQL: any FATF black-list wire; grey-list wires > $50K in 30 days |
 | ROUND_TRIP_CYCLE | §5.2 | `detection/cycles.py`: time-ordered DFS, 2–4 hops, 7 days, ≥80% conserved |
 | (severity bump) | §7.2 | `ALERT_QUEUE` view: high-risk customers raised one level |
