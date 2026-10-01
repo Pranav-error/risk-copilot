@@ -1,0 +1,26 @@
+-- The documented-finding end of the flow: analyst decisions and SAR drafts.
+-- Append-only in practice: the analyst role gets INSERT + SELECT only, never UPDATE/DELETE
+-- (granted in the governance script), so a decision can't be rewritten after the fact.
+
+CREATE TABLE IF NOT EXISTS FINDINGS (
+    FINDING_ID       NUMBER AUTOINCREMENT PRIMARY KEY,
+    ALERT_ID         NUMBER  NOT NULL,
+    DECISION         STRING  NOT NULL,   -- ESCALATE / DISMISS
+    ANALYST          STRING  NOT NULL,
+    REASON           STRING  NOT NULL,
+    EVIDENCE_TXN_IDS ARRAY,
+    POLICY_REFS      ARRAY,
+    DECIDED_BY_ROLE  STRING  DEFAULT CURRENT_ROLE(),
+    DECIDED_AT       TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+CREATE TABLE IF NOT EXISTS SAR_REPORTS (
+    SAR_ID         NUMBER AUTOINCREMENT PRIMARY KEY,
+    ALERT_ID       NUMBER  NOT NULL,
+    STATUS         STRING  DEFAULT 'DRAFT',   -- DRAFT / APPROVED / FILED
+    NARRATIVE      STRING  NOT NULL,
+    CITED_TXN_IDS  ARRAY,
+    CITED_SOURCES  ARRAY,
+    DRAFTED_BY     STRING,
+    CREATED_AT     TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
