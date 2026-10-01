@@ -84,7 +84,8 @@ def run(session):
     """Snowpark stored-procedure handler. Rewrites this rule's rows in ALERTS."""
     rows = session.sql(
         "SELECT TXN_ID, FROM_ACCOUNT_ID, TO_ACCOUNT_ID, AMOUNT, TXN_TS "
-        "FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL AND AMOUNT >= ?",
+        "FROM TRANSACTIONS WHERE FROM_ACCOUNT_ID IS NOT NULL AND TO_ACCOUNT_ID IS NOT NULL "
+        "AND AMOUNT >= ?",
         params=[MIN_AMOUNT],
     ).collect()
     cycles = find_cycles(tuple(r) for r in rows)
