@@ -27,35 +27,67 @@ SELECT 'STRUCTURING', ACCOUNT_ID, TXN_IDS, 'HIGH',
                         'threshold', 10000, 'policy', '3.3')
 FROM windows;
 
--- §4.1 VELOCITY: a day's value > 5x the account's trailing 90-day daily average, min $25,000.
--- ponytail: calendar days, not a rolling 24h window; switch to a self-join on TXN_TS if a
--- spike straddling midnight matters.
+-- §4.1 VELOCITY: 4+ transactions within any 24 hours whose value is > 5x the account's
+-- trailing 90-day daily average, minimum $10,000. Rolling window, so a burst that crosses
+-- midnight isn't split in two.
 DELETE FROM ALERTS WHERE RULE = 'VELOCITY';
 INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
 WITH legs AS (   -- every transaction counts for both of its internal accounts
     SELECT TXN_ID, FROM_ACCOUNT_ID AS ACCOUNT_ID, AMOUNT, TXN_TS FROM TRANSACTIONS WHERE FROM_ACCOUNT_ID IS NOT NULL
     UNION ALL
     SELECT TXN_ID, TO_ACCOUNT_ID, AMOUNT, TXN_TS FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL
-), daily AS (
-    SELECT ACCOUNT_ID, CAST(TXN_TS AS DATE) AS DAY, SUM(AMOUNT) AS VALUE, COUNT(*) AS N
-    FROM legs GROUP BY 1, 2
+), bursts AS (
+    SELECT a.ACCOUNT_ID, a.TXN_ID AS ANCHOR, a.TXN_TS AS WINDOW_START,
+           COUNT(*) AS N, SUM(b.AMOUNT) AS VALUE
+    FROM legs a
+    JOIN legs b ON b.ACCOUNT_ID = a.ACCOUNT_ID
+               AND b.TXN_TS >= a.TXN_TS AND b.TXN_TS < a.TXN_TS + INTERVAL '24 hours'
+    GROUP BY a.ACCOUNT_ID, a.TXN_ID, a.TXN_TS
+    HAVING COUNT(*) >= 4 AND SUM(b.AMOUNT) >= 10000
 ), scored AS (
-    SELECT d.ACCOUNT_ID, d.DAY, d.VALUE, d.N,
-           COALESCE(SUM(p.VALUE), 0) / 90 AS AVG90
-    FROM daily d
-    LEFT JOIN daily p ON p.ACCOUNT_ID = d.ACCOUNT_ID
-                     AND p.DAY >= d.DAY - INTERVAL '90 days' AND p.DAY < d.DAY
-    GROUP BY d.ACCOUNT_ID, d.DAY, d.VALUE, d.N
-    HAVING d.VALUE >= 25000 AND d.VALUE > 5 * COALESCE(SUM(p.VALUE), 0) / 90
+    SELECT w.ACCOUNT_ID, w.WINDOW_START, w.N, w.VALUE,
+           COALESCE(SUM(p.AMOUNT), 0) / 90 AS AVG90
+    FROM bursts w
+    LEFT JOIN legs p ON p.ACCOUNT_ID = w.ACCOUNT_ID
+                    AND p.TXN_TS >= w.WINDOW_START - INTERVAL '90 days' AND p.TXN_TS < w.WINDOW_START
+    GROUP BY w.ACCOUNT_ID, w.WINDOW_START, w.N, w.VALUE
+    HAVING w.VALUE > 5 * COALESCE(SUM(p.AMOUNT), 0) / 90
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY w.ACCOUNT_ID ORDER BY w.VALUE DESC) = 1
 )
 SELECT 'VELOCITY', s.ACCOUNT_ID, ARRAY_AGG(l.TXN_ID),
        CASE WHEN MAX(s.AVG90) = 0 THEN 'HIGH' ELSE 'MEDIUM' END,   -- §4.2: no prior activity
-       OBJECT_CONSTRUCT('day', s.DAY, 'day_value', MAX(s.VALUE), 'avg_90d', ROUND(MAX(s.AVG90), 2),
+       OBJECT_CONSTRUCT('window_start', MAX(s.WINDOW_START), 'txns_in_24h', MAX(s.N),
+                        'value_24h', MAX(s.VALUE), 'avg_daily_90d', ROUND(MAX(s.AVG90), 2),
                         'multiple', CASE WHEN MAX(s.AVG90) = 0 THEN NULL ELSE ROUND(MAX(s.VALUE) / MAX(s.AVG90), 1) END,
                         'policy', '4.1')
 FROM scored s
-JOIN legs l ON l.ACCOUNT_ID = s.ACCOUNT_ID AND CAST(l.TXN_TS AS DATE) = s.DAY
-GROUP BY s.ACCOUNT_ID, s.DAY;
+JOIN legs l ON l.ACCOUNT_ID = s.ACCOUNT_ID
+           AND l.TXN_TS >= s.WINDOW_START AND l.TXN_TS < s.WINDOW_START + INTERVAL '24 hours'
+GROUP BY s.ACCOUNT_ID;
+
+-- §5.5 PASS_THROUGH (rapid layering): an inflow of $50,000+ followed within 72 hours by 2+
+-- outflows totalling at least 50% of it. Money that only passes through the account.
+DELETE FROM ALERTS WHERE RULE = 'PASS_THROUGH';
+INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
+WITH inflow AS (
+    SELECT TXN_ID, TO_ACCOUNT_ID AS ACCOUNT_ID, AMOUNT, TXN_TS
+    FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL AND AMOUNT >= 50000
+), passed AS (
+    SELECT i.ACCOUNT_ID, i.TXN_ID AS IN_TXN, i.AMOUNT AS IN_AMOUNT, i.TXN_TS AS IN_TS,
+           ARRAY_AGG(o.TXN_ID) AS OUT_TXNS, COUNT(*) AS N_OUT, SUM(o.AMOUNT) AS OUT_TOTAL,
+           MAX(o.TXN_TS) AS LAST_OUT_TS
+    FROM inflow i
+    JOIN TRANSACTIONS o ON o.FROM_ACCOUNT_ID = i.ACCOUNT_ID
+                       AND o.TXN_TS > i.TXN_TS AND o.TXN_TS <= i.TXN_TS + INTERVAL '72 hours'
+    GROUP BY i.ACCOUNT_ID, i.TXN_ID, i.AMOUNT, i.TXN_TS
+    HAVING COUNT(*) >= 2 AND SUM(o.AMOUNT) >= 0.5 * i.AMOUNT
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY i.ACCOUNT_ID ORDER BY i.AMOUNT DESC) = 1
+)
+SELECT 'PASS_THROUGH', ACCOUNT_ID, ARRAY_PREPEND(OUT_TXNS, IN_TXN), 'HIGH',
+       OBJECT_CONSTRUCT('inflow', IN_AMOUNT, 'outflow_total', OUT_TOTAL, 'outflows', N_OUT,
+                        'pct_passed', ROUND(100 * OUT_TOTAL / IN_AMOUNT, 1),
+                        'hours', ROUND(DATEDIFF('minute', IN_TS, LAST_OUT_TS) / 60, 1), 'policy', '5.5')
+FROM passed;
 
 -- §6.2 GEO_RISK: any wire with a FATF black-list country (CRITICAL);
 -- grey-list wires totalling > $50,000 within 30 days (HIGH).

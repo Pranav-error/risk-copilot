@@ -1,0 +1,801 @@
+customer_id,full_name,customer_type,country,onboarding_date,kyc_risk_rating,pep_flag,business_sector,expected_monthly_volume
+CUST_ECA48C182E,Anvi Konda,individual,IN,2022-09-10,high,False,,6855.95
+CUST_AD99844807,Harsh Chahal,individual,IN,2023-08-24,low,False,,16176.93
+CUST_C9897ED1D9,Ayushman Chander,individual,IN,2025-05-02,medium,False,,9428.32
+CUST_5FF8499628,Yashasvi Bala,individual,IN,2023-08-10,low,False,,9748.79
+CUST_92A1B8C40D,Thomas Sen,individual,IN,2023-06-09,low,False,,10333.77
+CUST_8A76B363FF,Nathaniel Sami,individual,IN,2024-02-11,low,False,,8557.44
+CUST_2344EF1742,Nachiket Kale,individual,IN,2024-08-22,low,False,,14376.23
+CUST_069020B0BE,George Rai,individual,IN,2024-08-10,low,False,,9805.89
+CUST_E26D4F996C,Padmanabhan-Lalla,business,IN,2022-07-27,medium,False,hospitality,124595.43
+CUST_D76057E51D,Jeet Radhakrishnan,individual,IN,2022-02-11,low,False,,9124.01
+CUST_11F58E2E17,Janaki Handa,individual,IN,2022-06-01,medium,False,,6253.7
+CUST_1966FB0358,Vedant Mann,individual,IN,2022-05-04,low,False,,25724.4
+CUST_18FB3AAB0B,Chaudhuri Group,business,IN,2022-06-04,medium,False,retail_trade,117584.28
+CUST_2EEE99236A,Patla-Gaba,business,IN,2024-02-10,low,False,retail_trade,199867.28
+CUST_36F20D2EED,Shaurya Loke,individual,IN,2024-11-23,low,False,,21252.3
+CUST_5217138F26,Yash Gade,individual,IN,2022-05-09,low,False,,9673.21
+CUST_76A9210F2D,Anamika Kanda,individual,IN,2025-09-05,medium,False,,18944.59
+CUST_70099541C9,Veer Balay,individual,IN,2024-07-03,medium,False,,22757.48
+CUST_B80D51C398,Amrita Bhatti,individual,IN,2024-06-06,low,False,,5405.15
+CUST_A40088535D,Simon Tata,individual,IN,2023-07-17,low,False,,25842.82
+CUST_5ED376F3C1,Luke Lanka,individual,IN,2025-02-10,low,False,,7167.43
+CUST_B09D912DEB,Adya Sangha,individual,IN,2022-12-07,medium,False,,12765.71
+CUST_05DF94241C,Theodore Devi,individual,IN,2025-02-21,low,False,,10517.72
+CUST_E53082BFAC,Gavin Batta,individual,IN,2026-01-30,low,False,,12880.65
+CUST_983C4F23FF,Nathaniel Sami,individual,IN,2022-09-05,low,False,,9694.85
+CUST_FC63579BD7,Lakshmi Sidhu,individual,IN,2022-04-15,low,False,,5447.8
+CUST_FB65979B64,Ishwar Yadav,individual,IN,2023-11-20,low,False,,18049.42
+CUST_4943475840,"Oak, Choudhury and Memon",business,IN,2024-01-06,medium,False,hospitality,249334.17
+CUST_7ACAEA6D4E,Setty Inc,business,IN,2025-06-11,low,False,manufacturing,77077.69
+CUST_F0854BF2D1,Yashica Cherian,individual,IN,2023-12-27,low,False,,20007.76
+CUST_76C26C3FA9,"Tripathi, Issac and Dua",business,IN,2024-04-14,medium,True,it_services,11800.05
+CUST_DF693A9715,Aadi Naik,individual,IN,2024-12-04,low,False,,16437.34
+CUST_AC98D2E1E6,Choudhury LLC,business,IN,2025-11-26,low,False,it_services,46423.2
+CUST_94B9AE82AE,Bhardwaj and Sons,business,IN,2024-05-12,high,False,it_services,303509.14
+CUST_1B31791939,Vedika Biswas,individual,IN,2022-06-01,low,False,,14205.84
+CUST_81CDE0CCAB,Vaishnavi Gandhi,individual,IN,2022-10-25,low,False,,10305.51
+CUST_4515B2AAB3,"Sampath, Kakar and Zacharia",business,IN,2024-01-01,low,False,hospitality,129554.48
+CUST_8AB071E5DD,Mohini Prakash,individual,IN,2023-06-16,low,False,,13300.7
+CUST_0A5DAA0ACE,Jai Kota,individual,IN,2025-06-22,medium,False,,31042.83
+CUST_037C5DF34F,Hamsini Bail,individual,IN,2023-08-29,low,False,,30803.87
+CUST_16EF929521,Abhimanyu Bobal,individual,IN,2023-09-14,low,False,,37196.24
+CUST_8FD89E7F46,Ekansh Balay,individual,IN,2022-03-31,low,False,,22564.96
+CUST_219636C527,Yoshita Khanna,individual,IN,2024-07-22,low,False,,19386.44
+CUST_92B752043A,Tanish Zacharia,individual,IN,2024-02-12,low,False,,12130.01
+CUST_52D12C8962,"Solanki, Kibe and Solanki",business,IN,2022-11-15,medium,False,retail_trade,227541.63
+CUST_3A7E06B6CE,Girindra Chatterjee,individual,IN,2025-03-17,low,False,,18322.2
+CUST_3BE563DE92,Pallavi Roy,individual,IN,2025-05-31,medium,False,,5630.62
+CUST_991B16E7D8,Guneet Bhat,individual,IN,2025-09-19,medium,False,,27294.39
+CUST_59D79055ED,"Nori, Chopra and Kothari",business,IN,2025-03-03,medium,False,hospitality,118306.1
+CUST_46FA282B69,Saumya Dey,individual,IN,2023-05-18,low,False,,22213.17
+CUST_CB18EBA10D,Arya Shere,individual,IN,2025-05-02,low,False,,25074.54
+CUST_03E850D9E3,Saanvi Chaudhari,individual,IN,2023-11-15,medium,False,,29586.2
+CUST_3C75C9CF1F,Girik Khalsa,individual,IN,2022-03-06,medium,False,,17234.9
+CUST_7CC535158D,Vedika Srivastava,individual,IN,2023-02-28,low,False,,23489.8
+CUST_39B7376159,Daniel Gala,individual,IN,2023-07-26,low,False,,22633.9
+CUST_AF12287597,Madhavi Lanka,individual,IN,2024-12-20,medium,False,,11570.84
+CUST_B789F4BBD5,Pallavi Sur,individual,IN,2025-08-13,low,False,,7496.49
+CUST_3D99B03B0F,Chaman Kalla,individual,IN,2023-01-23,low,False,,24011.98
+CUST_5D80660947,"Bhat, Murthy and Bhandari",business,IN,2022-03-30,high,False,hospitality,89383.74
+CUST_97BE648A2C,"Sood, Thakkar and Wali",business,IN,2022-03-04,high,False,logistics,178487.29
+CUST_F537825EFE,Yashoda Buch,individual,IN,2023-02-01,low,False,,7664.63
+CUST_BA1281D6B9,Ekansh Keer,individual,IN,2023-04-30,medium,False,,9820.44
+CUST_7868166C83,Yatin Baral,individual,IN,2025-03-07,low,False,,25196.34
+CUST_DD856AE103,Diya Lal,individual,IN,2022-06-11,low,False,,13777.84
+CUST_8969D06BD7,William Lanka,individual,IN,2023-06-26,low,False,,16037.25
+CUST_4B4780B5F4,Mital Group,business,IN,2025-02-10,low,False,retail_trade,121268.94
+CUST_7A8A0C203F,Aditya Shanker,individual,IN,2024-06-08,low,False,,15357.78
+CUST_C335F57F78,Tanay Toor,individual,IN,2022-08-06,low,False,,14849.31
+CUST_9B1A6D2904,Ikshita Biswas,individual,IN,2024-01-01,low,False,,4568.33
+CUST_1648FD75F0,Bhavani Dugar,individual,IN,2023-10-28,low,False,,16553.99
+CUST_B7EBAD0524,"Mittal, Wadhwa and Anand",business,IN,2025-06-22,low,False,logistics,343968.07
+CUST_23ABF11E6F,Krish Lalla,individual,IN,2024-04-17,low,False,,14430.95
+CUST_3D419AB82F,Nachiket Magar,individual,IN,2022-09-23,low,False,,30274.51
+CUST_18D3669131,"Kade, Oza and Jani",business,IN,2024-02-22,low,False,real_estate,191570.81
+CUST_73EDA74B65,Zayan Behl,individual,IN,2023-12-29,low,False,,8407.74
+CUST_A46D7A7C29,Aradhana Basu,individual,IN,2022-07-13,low,False,,36198.79
+CUST_3672B33333,Kalpit Lala,individual,IN,2021-10-11,medium,False,,16753.76
+CUST_2073B12319,Prisha Andra,individual,IN,2023-02-14,low,False,,35983.31
+CUST_1E42CDC42D,Manthan Banik,individual,IN,2022-09-12,medium,True,,11586.14
+CUST_8CA228B3BB,Qushi Datta,individual,IN,2024-11-20,low,False,,41076.99
+CUST_33B646B44C,Janya Baral,individual,IN,2022-02-06,low,False,,33719.8
+CUST_A6138765D1,Zaid Chauhan,individual,IN,2024-10-15,low,False,,29553.52
+CUST_A088F6FAC7,Mohammed Khalsa,individual,IN,2024-10-02,medium,False,,11831.56
+CUST_8E7A1578DD,Nitara Bakshi,individual,IN,2023-02-16,medium,False,,13856.89
+CUST_58990308AB,Nisha Kothari,individual,IN,2023-04-10,low,False,,20173.18
+CUST_A5C88F95F9,Hritik Raja,individual,IN,2024-01-06,high,False,,13940.92
+CUST_DBB31BDAAF,Tristan Iyengar,individual,IN,2022-01-28,low,False,,9978.02
+CUST_32A6B0B1F9,Dalaja Kari,individual,IN,2025-08-30,medium,False,,15131.88
+CUST_7DA30BEE43,Hans Group,business,IN,2023-08-23,low,False,retail_trade,211421.46
+CUST_796023A0B4,Boase-Mallick,business,IN,2024-07-15,medium,False,retail_trade,315539.83
+CUST_5B2F4F0BF6,Garima Bala,individual,IN,2024-09-24,low,False,,4570.59
+CUST_38E35EC594,Pranav Lanka,individual,IN,2022-09-23,low,False,,6423.11
+CUST_6904C99BE6,Saraf LLC,business,IN,2022-01-26,low,False,retail_trade,71229.88
+CUST_986BCD5164,Vaidya-D’Alia,business,IN,2024-05-31,low,False,it_services,121698.07
+CUST_EC20320690,Aachal Basu,individual,IN,2025-01-08,medium,False,,11354.57
+CUST_FAC8AF07EA,Venkatesh PLC,business,IN,2025-06-15,high,False,it_services,60447.12
+CUST_EEF32BCC5F,Raagini Boase,individual,IN,2023-06-04,low,False,,27527.86
+CUST_F1B467E8DB,Jeet Mital,individual,IN,2024-07-21,medium,False,,6515.92
+CUST_195F2C21D1,Nilima Narain,individual,IN,2026-01-22,low,False,,3812.31
+CUST_B5435793C8,"Merchant, Datta and Handa",business,IN,2025-03-03,low,False,logistics,406909.15
+CUST_89BBFE5E0B,Owen Mitra,individual,IN,2025-04-28,medium,False,,10301.22
+CUST_8E815B235B,"Acharya, Modi and Mangat",business,IN,2025-03-14,medium,False,logistics,116198.84
+CUST_F0C08F5B73,Ekanta Shroff,individual,IN,2023-07-15,high,False,,26705.17
+CUST_A422EE3F3E,Kala-Vaidya,business,IN,2025-07-03,high,False,retail_trade,67379.4
+CUST_829B763B81,Frado Mander,individual,IN,2025-10-09,low,False,,3935.35
+CUST_E922569739,"Nayak, Chander and Keer",business,IN,2026-02-17,low,False,logistics,346634.37
+CUST_4F87CE1998,Rushil Din,individual,IN,2024-05-21,low,False,,28643.53
+CUST_694B140C43,Yash Soman,individual,IN,2021-12-14,high,False,,21216.15
+CUST_865184DAA7,Oeshi Hayer,individual,IN,2022-05-14,medium,False,,13929.88
+CUST_17FA60FFE0,Ratta-Kohli,business,IN,2025-01-04,low,False,it_services,216815.8
+CUST_888512FDB5,"Ahluwalia, Chhabra and Sandal",business,IN,2023-01-01,low,False,hospitality,69873.81
+CUST_E2F22EF0B0,Zarna Shetty,individual,IN,2023-08-10,low,False,,40781.35
+CUST_2D9660F424,Jairaj Shan,individual,IN,2022-03-05,low,False,,12499.46
+CUST_FA912298EB,Edhitha Savant,individual,IN,2022-11-18,low,False,,23999.43
+CUST_72C4CE8AF2,Sanaya Dutt,individual,IN,2026-01-15,low,False,,4240.24
+CUST_59D20B3844,Lad-Kota,business,IN,2025-10-13,low,False,hospitality,131923.99
+CUST_09814F065A,"Sundaram, Khare and Maharaj",business,IN,2024-02-08,medium,False,hospitality,178719.07
+CUST_290396FA66,Bhavika Keer,individual,IN,2025-06-27,medium,False,,32402.64
+CUST_26FEC1B4C2,Ekaja Zachariah,individual,IN,2024-01-22,low,False,,15951.15
+CUST_7C7378EBAF,Matthew Kashyap,individual,IN,2022-06-07,high,False,,6916.0
+CUST_54F99E9FF2,"Dua, Kala and Bhatt",business,IN,2025-01-02,low,False,logistics,90499.27
+CUST_BBC6AE2CAB,Narayanan-Shukla,business,IN,2025-04-10,medium,False,real_estate,94429.81
+CUST_77A9435A93,Jhaveri Group,business,IN,2025-04-13,low,False,it_services,76847.72
+CUST_C1BE70F7CE,Lajita Sood,individual,IN,2025-01-22,high,False,,5118.04
+CUST_5701B64853,Chanchal Ramakrishnan,individual,IN,2021-10-18,low,False,,8129.58
+CUST_CB6466D087,Vinaya Kanda,individual,IN,2025-04-23,low,False,,11133.14
+CUST_EAAF86D814,Vedika Balakrishnan,individual,IN,2024-01-25,medium,False,,24734.34
+CUST_98B674AC31,Nidhi Gandhi,individual,IN,2025-01-20,low,False,,14759.66
+CUST_8D1243EA1A,Avi Ramesh,individual,IN,2025-09-21,low,False,,10299.08
+CUST_6EF8666C7A,Priya Deshmukh,individual,IN,2021-12-23,low,False,,10879.27
+CUST_5F24E44AE3,Chandresh Lad,individual,IN,2025-09-03,low,False,,15064.26
+CUST_A4B0975357,Siddharth Sha,individual,IN,2024-12-20,low,False,,3631.79
+CUST_5878AADA13,Raghavan-Mall,business,IN,2024-07-11,medium,False,real_estate,97560.25
+CUST_0ABD7BEF8E,Finn Singhal,individual,IN,2025-05-01,low,False,,21543.8
+CUST_A32388194B,Inaya Kapur,individual,IN,2021-11-29,low,False,,12409.94
+CUST_8A3F164BC0,Azaan Kota,individual,IN,2022-05-01,low,False,,12769.54
+CUST_C098EECC7B,Michael Khare,individual,IN,2023-06-11,low,False,,20919.16
+CUST_B585D6BA14,Ishwar Kamdar,individual,IN,2022-10-27,low,False,,11221.47
+CUST_CBB25CAEB6,Jyoti Ganesh,individual,IN,2025-09-13,low,False,,8190.26
+CUST_0D20F1325E,Deepa Chokshi,individual,IN,2022-09-20,low,False,,9552.75
+CUST_177D5AB898,Keya Ranganathan,individual,IN,2021-12-18,low,False,,12567.01
+CUST_C8D6B1D1D8,Xavier Chaudry,individual,IN,2023-06-08,low,False,,13701.77
+CUST_D0D9A7DE41,"Dara, Barman and Palan",business,IN,2024-04-23,medium,False,logistics,195064.08
+CUST_D3B8FC4694,Ekapad Toor,individual,IN,2025-05-22,low,False,,9207.57
+CUST_64DCCFFDE6,Osha Suri,individual,IN,2024-08-25,low,False,,9173.6
+CUST_A0B8A5B49B,Janaki Sharaf,individual,IN,2022-08-23,low,False,,3585.75
+CUST_93F69774F6,Patrick Vig,individual,IN,2023-01-18,medium,False,,7454.99
+CUST_1171C2289D,Udyati Sarin,individual,IN,2024-01-17,low,False,,14012.28
+CUST_7E82C8E2A0,Yatan Chadha,individual,IN,2024-01-11,low,False,,7067.36
+CUST_D6EA4251C8,Yagnesh Shetty,individual,IN,2024-02-13,low,False,,9021.59
+CUST_58D24D968D,Ayush Talwar,individual,IN,2024-12-20,low,False,,7907.88
+CUST_A8705ED6C6,Vinaya Kala,individual,IN,2024-07-05,low,False,,13333.33
+CUST_52DCD21F8A,Harini Mammen,individual,IN,2024-10-06,low,False,,30866.88
+CUST_1E502B4D0B,Zansi Halder,individual,IN,2024-02-05,low,False,,6088.83
+CUST_5511EFB650,Niharika Suresh,individual,IN,2022-06-22,low,False,,10149.04
+CUST_390AE6971F,Vritti Sem,individual,IN,2023-10-16,low,False,,9176.53
+CUST_16703DEECC,Chaitaly Kant,individual,IN,2021-11-22,medium,False,,2976.03
+CUST_934B0ECB8A,"Kohli, Mohan and Pillay",business,IN,2025-03-09,low,False,manufacturing,170708.68
+CUST_2012CA0777,"Wali, Padmanabhan and Sandal",business,IN,2025-10-09,medium,False,import_export,55314.95
+CUST_3D3131A438,Sudiksha Madan,individual,IN,2024-07-23,medium,False,,9705.54
+CUST_4AB069D6AC,Vihaan Dara,individual,IN,2024-05-09,low,False,,9521.1
+CUST_7A24FDCEA6,Jagdish Wason,individual,IN,2023-05-21,low,False,,7322.98
+CUST_3A95867426,Tarak Sule,individual,IN,2023-04-28,low,False,,6744.72
+CUST_47D35889E9,Harish Hari,individual,IN,2024-02-06,low,False,,15687.91
+CUST_E6251CFD6E,Jalsa Gola,individual,IN,2024-04-07,low,False,,9309.76
+CUST_E77C37E453,Jonathan Mahal,individual,IN,2024-04-26,medium,False,,21081.49
+CUST_8BCF7C90EA,Brinda Date,individual,IN,2022-02-18,low,False,,14791.94
+CUST_6D4A879040,Advik Mane,individual,IN,2025-12-03,low,False,,14095.86
+CUST_702FE1982E,Ridhi Oak,individual,IN,2025-09-27,medium,False,,9351.48
+CUST_CC97E1DED3,Zayyan Sridhar,individual,IN,2023-04-25,low,False,,19015.26
+CUST_D4515354CB,Nandini Swamy,individual,IN,2022-09-19,low,False,,11360.28
+CUST_795CD3486C,"Bera, Doshi and Dixit",business,IN,2022-05-18,low,False,import_export,210679.55
+CUST_444F164D9B,Yuvraj Dani,individual,IN,2024-04-30,low,False,,5176.32
+CUST_1E148665A3,"Kara, Virk and Rai",business,IN,2025-04-15,low,False,retail_trade,99991.73
+CUST_945DA3CCB0,Mishra-Sanghvi,business,IN,2025-07-30,low,False,import_export,112662.91
+CUST_ACEE1F4DC0,Hardik Johal,individual,IN,2024-05-05,low,False,,18795.3
+CUST_62989C9AF9,Finn Dugar,individual,IN,2023-07-17,low,False,,9972.26
+CUST_D702B21D3F,Falan Dugar,individual,IN,2023-10-15,low,False,,17022.52
+CUST_C18F20D584,Shravya Singhal,individual,IN,2021-10-08,low,False,,10845.27
+CUST_B75A266ADA,Kata LLC,business,IN,2024-03-22,low,False,import_export,191627.94
+CUST_651906B9CB,Ekavir Kaur,individual,IN,2024-02-25,low,False,,10337.73
+CUST_1373CD6328,Pavani Contractor,individual,IN,2023-12-30,medium,False,,9589.39
+CUST_48F083B111,Amaira Dhar,individual,IN,2023-08-29,low,False,,7079.57
+CUST_B8D00D2782,Gandhi LLC,business,IN,2022-05-09,low,False,it_services,65491.03
+CUST_C5A04FE125,Jeet Sidhu,individual,IN,2024-03-14,medium,False,,14888.11
+CUST_43AA02E0AD,Anita Tella,individual,IN,2024-05-01,low,False,,65260.55
+CUST_E5A6898F29,Buch-Baral,business,IN,2025-12-12,low,False,hospitality,117417.22
+CUST_F05A280859,Zashil Bal,individual,IN,2025-06-03,low,False,,17418.18
+CUST_937CB7FE79,Ansh Luthra,individual,IN,2022-07-10,medium,False,,12655.71
+CUST_49CED4C1B4,Upma Venkataraman,individual,IN,2022-02-01,high,False,,21346.52
+CUST_BD3B0E9410,Pratyush Sarin,individual,IN,2025-07-04,medium,False,,61280.36
+CUST_E718971B74,Upma Pall,individual,IN,2025-12-05,low,False,,18294.79
+CUST_79FAB263E2,Nagi-Cheema,business,IN,2025-03-21,low,False,real_estate,195203.36
+CUST_BB26EE2EB1,Sabharwal-Tandon,business,IN,2023-02-11,low,False,manufacturing,15419.84
+CUST_CED77D2963,Balhaar Sha,individual,IN,2024-03-13,low,False,,6800.48
+CUST_D0EDD0882C,Zayyan Naik,individual,IN,2022-06-30,low,False,,12216.93
+CUST_7E3944EADA,Varkey-Agarwal,business,IN,2022-09-25,low,False,manufacturing,43749.97
+CUST_B5612F9600,Bhagat-Guha,business,IN,2025-09-04,low,False,it_services,149243.64
+CUST_AF8B447EAA,Wishi Sathe,individual,IN,2026-02-26,high,False,,8896.92
+CUST_0FAE908BDE,Amara Deep,individual,IN,2022-03-09,low,False,,14611.61
+CUST_5A9E9B0036,Vedhika Dara,individual,IN,2024-03-12,low,False,,62439.67
+CUST_B87170BCB9,Nathan Mukhopadhyay,individual,IN,2021-12-28,medium,False,,6875.62
+CUST_B875BD33E2,Girik Kar,individual,IN,2021-11-11,low,False,,6591.15
+CUST_5F0853D63E,Jacob Dube,individual,IN,2022-09-17,medium,False,,15096.54
+CUST_6C74E3E16A,Yashodhara Mahajan,individual,IN,2025-12-26,low,False,,10752.2
+CUST_698A0C84CD,Urmi Kohli,individual,IN,2025-04-12,medium,False,,12813.39
+CUST_A28CE149F8,Leela Halder,individual,IN,2025-08-19,low,False,,14175.17
+CUST_8FF2A8EA2D,Ekaraj Majumdar,individual,IN,2026-01-26,low,False,,12354.71
+CUST_04746C2127,Yashica Loke,individual,IN,2025-04-11,low,False,,15379.51
+CUST_5E9BF9306C,Chanchal Suri,individual,IN,2021-10-07,low,False,,15547.47
+CUST_A7A91C278F,Veda Pai,individual,IN,2023-01-04,medium,True,,4905.6
+CUST_442224958E,"Purohit, Shah and Nagy",business,IN,2024-07-28,medium,False,it_services,405043.42
+CUST_C6B1A3D102,Leela Kaur,individual,IN,2023-05-09,low,False,,21032.22
+CUST_74C07D17CD,Eesha Solanki,individual,IN,2025-03-29,low,False,,5722.64
+CUST_CF28AF4123,Max Tandon,individual,IN,2024-12-27,medium,False,,23934.92
+CUST_9E991A0620,Yadavi Narula,individual,IN,2022-01-23,low,False,,13113.86
+CUST_B66CF56CCD,Harish Vora,individual,IN,2022-08-07,low,False,,9193.82
+CUST_9795E52110,Dhawan Group,business,IN,2025-08-19,high,False,import_export,70649.45
+CUST_8B9144B047,Upasna Lanka,individual,IN,2023-01-22,low,True,,5025.32
+CUST_29B5CE78F6,Faris Narasimhan,individual,IN,2024-08-16,low,False,,18603.75
+CUST_09472574BF,Vinaya Banik,individual,IN,2024-12-23,low,False,,35324.08
+CUST_4C6E8A6573,Bhavna Karan,individual,IN,2022-04-30,low,False,,34279.29
+CUST_E48F8D2672,Guneet Chaudhry,individual,IN,2022-07-07,low,False,,10842.1
+CUST_565392D072,Chandani Balakrishnan,individual,IN,2025-07-09,low,False,,15050.03
+CUST_8544D900BE,Daksh Memon,individual,IN,2022-02-19,low,False,,18852.11
+CUST_B078AB5188,Raagini Dhingra,individual,IN,2024-10-17,low,False,,4665.06
+CUST_043D382305,Pranit Garde,individual,IN,2023-10-28,low,False,,19236.03
+CUST_4CDD951C44,Lavanya Khosla,individual,IN,2023-03-27,low,False,,5369.51
+CUST_EED73054A8,Vincent Shenoy,individual,IN,2025-12-24,medium,False,,14881.99
+CUST_C5C84D2AB8,Aadhya Andra,individual,IN,2023-11-28,low,False,,10928.06
+CUST_DF4D11C62D,Nakul Borah,individual,IN,2025-09-14,medium,False,,6955.8
+CUST_C107D39B2B,Chandani Samra,individual,IN,2025-07-03,low,False,,23334.53
+CUST_C6A77BE0E2,Mittal-Issac,business,IN,2023-11-16,low,False,manufacturing,34355.65
+CUST_87272835EE,Hredhaan Khalsa,individual,IN,2025-01-07,medium,False,,11663.89
+CUST_DD3E68BCC5,"Parmer, Merchant and Merchant",business,IN,2024-12-27,low,False,retail_trade,68665.66
+CUST_02F9480FDA,Anvi Anand,individual,IN,2021-12-07,low,False,,19531.13
+CUST_3AD08A9CB6,"Taneja, Mangat and Karpe",business,IN,2022-03-01,low,False,retail_trade,190001.6
+CUST_31C0C506B6,Ranveer Krishna,individual,IN,2024-09-28,low,False,,14476.89
+CUST_CE2238ABFC,"Chatterjee, Baral and More",business,IN,2022-11-28,high,False,real_estate,243593.36
+CUST_581CA773A1,Patla Ltd,business,IN,2025-06-30,low,False,retail_trade,92565.09
+CUST_5C50A1F9F3,Chakrika Narain,individual,IN,2022-11-12,low,False,,7147.44
+CUST_BE24A76604,Sai Deo,individual,IN,2025-04-12,low,False,,28760.44
+CUST_7AC7196CFA,Nitesh Kurian,individual,IN,2024-11-09,medium,False,,22486.24
+CUST_18CCC4BCF7,Hamsini Contractor,individual,IN,2025-11-05,low,False,,15832.49
+CUST_6A03274BA9,Dhaliwal and Sons,business,IN,2025-09-24,low,False,manufacturing,174681.51
+CUST_110E48912D,Gautam Rana,individual,IN,2025-02-15,high,False,,13741.98
+CUST_E0A7FA1E9D,Jatin Sha,individual,IN,2021-11-12,low,False,,23199.74
+CUST_F74A7D1D8E,"Lala, Raj and Prabhu",business,IN,2024-11-18,medium,False,import_export,126891.74
+CUST_85B8C871FD,Urishilla Bakshi,individual,IN,2022-09-01,medium,False,,11156.57
+CUST_D33392663A,Dev Shetty,individual,IN,2024-07-15,low,False,,8243.07
+CUST_296DDB99CF,Jackson Dey,individual,IN,2024-04-25,low,False,,4187.22
+CUST_4C3E4CDB99,Daksha Tailor,individual,IN,2022-02-17,low,False,,6474.08
+CUST_A83C498211,Wahab Yogi,individual,IN,2022-09-25,low,False,,53414.29
+CUST_BD8DC21B1B,Sudiksha Prabhakar,individual,IN,2022-11-25,high,False,,8970.19
+CUST_50B7C3F572,"Dubey, Sachdeva and Chaudhary",business,IN,2025-04-24,low,False,manufacturing,28114.25
+CUST_D5DDF44996,Ati Bali,individual,IN,2025-11-28,low,False,,13965.95
+CUST_F9F3A4A2BE,Sachi Saxena,individual,IN,2024-11-24,low,False,,10678.21
+CUST_D62F484CED,Hardik Pillai,individual,IN,2023-10-03,low,False,,6606.82
+CUST_6C68B7FA0B,Rao LLC,business,IN,2024-10-18,low,False,logistics,650763.19
+CUST_27FA95D516,Suhani Chand,individual,IN,2023-05-12,low,False,,23451.81
+CUST_C63DDF0A71,Chandresh Nath,individual,IN,2023-07-20,low,False,,18510.61
+CUST_78578303B4,Samesh Biswas,individual,IN,2023-10-26,low,False,,25595.35
+CUST_8C3C0A4A06,Viraj Narasimhan,individual,IN,2023-07-05,low,False,,8066.34
+CUST_FF34D33A38,Aradhana Dhillon,individual,IN,2023-01-01,low,False,,13293.54
+CUST_9B14D88209,"Krishna, Ghosh and Choudhary",business,IN,2022-11-07,low,False,manufacturing,258979.05
+CUST_9D4D14460C,Alexander Parmar,individual,IN,2021-12-19,low,False,,16413.85
+CUST_DED7B63C60,Amol Ghosh,individual,IN,2023-10-09,medium,False,,23383.78
+CUST_91AC32A364,Date Ltd,business,IN,2024-01-02,medium,False,import_export,138323.16
+CUST_323CB3D384,Devansh Soni,individual,IN,2025-04-29,low,False,,9049.68
+CUST_40CD246FEC,Varghese-Chopra,business,IN,2025-07-23,medium,False,retail_trade,144994.3
+CUST_D849009E14,"Kant, Bassi and Verma",business,IN,2025-08-04,low,False,hospitality,56861.16
+CUST_7581C71275,Balasubramanian-Bhat,business,IN,2024-04-24,medium,False,real_estate,146673.52
+CUST_81664EBEB5,Pooja Chokshi,individual,IN,2025-10-27,low,False,,13558.72
+CUST_D75198E231,Ethan Buch,individual,IN,2025-12-01,low,False,,14100.61
+CUST_F828FDD574,Dominic Date,individual,IN,2024-06-26,low,False,,18449.88
+CUST_C68912BFF1,Lakshmi Wali,individual,IN,2024-02-01,low,False,,13749.7
+CUST_46AEE75E56,Yashasvi Sani,individual,IN,2024-04-03,medium,False,,11946.3
+CUST_9E763A79C8,Tanveer Sani,individual,IN,2022-08-04,low,False,,10479.75
+CUST_1D8FD41F4D,Odika Nori,individual,IN,2025-08-02,low,False,,16651.6
+CUST_C5151C855B,Ojasvi Chandran,individual,IN,2025-08-08,low,False,,9745.07
+CUST_BA7903F635,Dhriti Kumer,individual,IN,2024-05-28,medium,False,,4814.58
+CUST_99A7B54EE1,Som Inc,business,IN,2024-12-05,low,False,logistics,71310.99
+CUST_9637407FF5,Girik Sankaran,individual,IN,2022-07-10,medium,False,,26189.45
+CUST_43162D2758,Kalpit Bhasin,individual,IN,2022-07-27,high,False,,29328.83
+CUST_D5F20A78F2,Nirja Pandya,individual,IN,2024-07-20,medium,False,,6397.38
+CUST_951D8524E8,Bhavna Muni,individual,IN,2025-05-06,high,False,,36173.5
+CUST_29B090FC2B,Tripathi and Sons,business,IN,2024-09-26,low,False,retail_trade,104753.47
+CUST_D12E03E061,Udarsh Chokshi,individual,IN,2023-01-23,medium,False,,11641.81
+CUST_2E4FF33F2D,"Pillai, Contractor and Mallick",business,IN,2024-09-21,low,False,real_estate,173889.0
+CUST_27C95F9991,Bal-Loke,business,IN,2023-09-02,medium,False,retail_trade,175963.53
+CUST_5A8A6781DA,Anjali More,individual,IN,2021-12-28,low,False,,28269.0
+CUST_EEA58D6322,Abeer Golla,individual,IN,2024-08-20,low,False,,17940.98
+CUST_653EAD7E76,Ekaraj Dhar,individual,IN,2022-12-19,low,False,,8565.52
+CUST_3C9B7D2A3B,Tanveer Puri,individual,IN,2022-01-03,low,False,,13245.68
+CUST_F0D01A33D5,Harita Dugar,individual,IN,2025-04-26,low,True,,12042.28
+CUST_245181B579,Ekta Chad,individual,IN,2024-11-22,low,False,,8840.55
+CUST_5712A2A6C7,Nakul Bawa,individual,IN,2022-03-12,medium,False,,13167.33
+CUST_139688D69D,Saanvi Samra,individual,IN,2022-06-10,low,False,,9484.34
+CUST_461CFC09A4,Oeshi Mahajan,individual,IN,2025-11-16,low,False,,18305.07
+CUST_B0AD653FBF,Hemani Sani,individual,IN,2023-07-31,low,False,,38908.77
+CUST_B38A178F9F,Vidhi Vyas,individual,IN,2022-09-09,low,False,,11999.17
+CUST_43AC764790,Thomas Rana,individual,IN,2024-05-15,low,False,,8611.67
+CUST_419E6A5947,Jayaraman LLC,business,IN,2022-03-19,low,False,logistics,123057.68
+CUST_1D19DFC9E2,Aadhya Mann,individual,IN,2023-07-18,low,False,,8274.0
+CUST_D0D7F05740,Abhimanyu Tank,individual,IN,2024-07-15,low,False,,16915.03
+CUST_D64C26A64A,Dayal Group,business,IN,2025-05-29,low,False,manufacturing,170272.62
+CUST_B61365C601,Ekbal Ranganathan,individual,IN,2023-09-14,medium,False,,11863.58
+CUST_4CD1959877,Anirudh Sharaf,individual,IN,2022-02-08,low,False,,29447.58
+CUST_A1B66E31FA,Pushti Ravel,individual,IN,2022-05-29,low,False,,7194.37
+CUST_789F68AA3A,Ishwar Ravel,individual,IN,2025-04-19,low,False,,9724.67
+CUST_8F72312800,Onveer Sharma,individual,IN,2021-12-03,medium,False,,6790.66
+CUST_EC9D9095D9,Rajeshri Cherian,individual,IN,2024-10-28,low,False,,18742.83
+CUST_47979060B4,Nandini Viswanathan,individual,IN,2023-10-25,low,False,,23382.13
+CUST_A17E62D757,Dayita Nori,individual,IN,2022-06-01,low,False,,22559.13
+CUST_BB82C114C8,Ganguly-Bose,business,IN,2023-08-19,low,False,import_export,28298.23
+CUST_D72F552759,Yashvi Hari,individual,IN,2026-02-02,low,False,,44402.11
+CUST_0EF0412D66,Divan-Keer,business,IN,2024-09-19,low,False,hospitality,187287.21
+CUST_7A31F6482D,Aahana Hora,individual,IN,2022-08-15,low,False,,14876.9
+CUST_A66D744085,Faqid Goel,individual,IN,2023-03-23,low,False,,16224.54
+CUST_2A275E07A3,Saumya Naidu,individual,IN,2025-12-13,low,False,,11216.11
+CUST_7610505A3C,Ria Bir,individual,IN,2024-06-08,low,False,,6678.57
+CUST_504CBD8755,Chavvi Maharaj,individual,IN,2025-09-25,high,False,,16180.05
+CUST_C0147826DB,Yashica Borah,individual,IN,2022-03-23,low,False,,5252.51
+CUST_79D47F2309,Siya Barad,individual,IN,2024-05-21,low,False,,11345.34
+CUST_8F245A43DF,Bhavini Bose,individual,IN,2022-03-25,medium,False,,19719.33
+CUST_78BBF22656,Turvi Barman,individual,IN,2022-07-07,low,False,,5795.3
+CUST_F087C95F73,Ekanta Soni,individual,IN,2025-07-28,medium,False,,27686.65
+CUST_826A7CB1FD,Bhatia Group,business,IN,2026-01-04,low,False,logistics,91893.16
+CUST_9C87909F2E,Frado Thaman,individual,IN,2022-08-17,low,False,,13753.26
+CUST_BF26CEE86D,Kota Ltd,business,IN,2023-03-20,low,False,import_export,56952.07
+CUST_210103F74E,Nathan Patla,individual,IN,2025-06-21,medium,False,,9383.82
+CUST_04E9C11185,Lila Rege,individual,IN,2024-12-01,high,False,,13434.42
+CUST_0D34DEC234,Gaurika Bhatti,individual,IN,2024-08-16,high,False,,12330.76
+CUST_A3C5C60A6E,Libni Mander,individual,IN,2024-07-20,low,False,,25630.03
+CUST_E839A99F6F,Gauri Bumb,individual,IN,2023-11-21,low,False,,7607.72
+CUST_C763DE22DF,Dayita Ramanathan,individual,IN,2022-12-13,high,False,,19664.32
+CUST_AF4C1B713F,Dayita Puri,individual,IN,2022-11-04,low,False,,18551.94
+CUST_9E88A9B32C,Vyas Inc,business,IN,2024-07-16,medium,False,manufacturing,47395.01
+CUST_A67AF6EFB8,Andrew Patil,individual,IN,2025-05-07,low,False,,10205.15
+CUST_91315ED397,Kala LLC,business,IN,2024-05-16,low,False,logistics,104192.85
+CUST_00166FAEE7,Upkaar Devan,individual,IN,2025-11-18,low,False,,8408.71
+CUST_7BE0F1F262,Chakrika Chaudhuri,individual,IN,2023-01-24,high,False,,15962.17
+CUST_D09D010A4B,"Vyas, Barad and Nayar",business,IN,2026-01-24,low,False,it_services,129635.25
+CUST_425936B6E6,Mitesh Gaba,individual,IN,2022-11-11,medium,False,,31606.21
+CUST_5ED133A68C,Raksha Bassi,individual,IN,2023-04-14,low,False,,20596.57
+CUST_48B7A7354D,Wazir Sawhney,individual,IN,2025-03-29,medium,False,,19559.93
+CUST_2DA3BCEB96,Vivaan Walla,individual,IN,2024-03-03,low,False,,6205.47
+CUST_742D7523F4,Upasna Hari,individual,IN,2023-10-13,low,False,,4982.84
+CUST_0B0909E627,Triya Manda,individual,IN,2024-11-15,low,False,,14791.62
+CUST_1CD3319EA8,Neel Iyengar,individual,IN,2024-12-29,low,False,,8777.36
+CUST_A6351428AB,Charles Srivastava,individual,IN,2022-12-03,medium,False,,10172.6
+CUST_4B162C4AF5,Zaitra Dash,individual,IN,2024-11-26,low,False,,13200.88
+CUST_686E12E1F2,Naveen Mahajan,individual,IN,2024-03-03,low,False,,20090.13
+CUST_8BDCBB9AFB,Rajeshri Chand,individual,IN,2025-07-26,high,True,,18869.1
+CUST_B8CD31CF42,Ikshita Bala,individual,IN,2023-08-20,low,False,,11480.31
+CUST_2A312A83A8,Randhawa PLC,business,IN,2025-04-11,low,False,hospitality,135086.1
+CUST_33F7161298,Libni Bumb,individual,IN,2024-12-04,low,False,,7924.04
+CUST_E441BBD7F0,Ayaan Nagar,individual,IN,2024-12-07,medium,False,,7401.49
+CUST_82CEC9092C,Madhav Devan,individual,IN,2022-08-03,low,False,,9302.2
+CUST_8EAFAFC767,Urmi Dewan,individual,IN,2022-01-27,low,False,,5155.98
+CUST_3B21B8D073,Abdul Buch,individual,IN,2025-09-26,low,False,,14710.04
+CUST_7A3D98C889,Tanveer Doctor,individual,IN,2021-11-28,high,False,,7613.39
+CUST_4D9CD32FEF,Mani and Sons,business,IN,2025-05-07,low,False,retail_trade,144000.07
+CUST_CEFA956742,Champak Khare,individual,IN,2024-04-22,medium,False,,14523.59
+CUST_F97579EEDA,Dev Choudhry,individual,IN,2025-04-26,low,False,,26626.22
+CUST_7DDE1C284A,"Wason, Babu and Varma",business,IN,2025-12-30,low,False,retail_trade,77596.44
+CUST_DAFDFAD2AF,Bishakha Sanghvi,individual,IN,2023-10-21,low,False,,39804.84
+CUST_391340BAAE,Wridesh Saha,individual,IN,2021-10-04,low,False,,8128.11
+CUST_F9966E85B3,Jalsa Bir,individual,IN,2023-05-04,low,False,,10802.53
+CUST_9786587457,Madhavi Singhal,individual,IN,2026-01-23,low,False,,17537.96
+CUST_4FF0EE5D38,Kashvi Kulkarni,individual,IN,2022-02-12,low,False,,32070.64
+CUST_48E4FD73B5,Ekansh Pai,individual,IN,2021-11-19,high,False,,4860.1
+CUST_C0A650921D,Gaurangi Deol,individual,IN,2023-10-19,low,False,,24000.51
+CUST_6D11758C99,Nigam-Gill,business,IN,2022-02-14,low,False,hospitality,238766.01
+CUST_771D9A9E9A,Qabil Deshmukh,individual,IN,2025-09-12,low,False,,6901.76
+CUST_E4598E0FCE,Balhaar Memon,individual,IN,2022-04-14,low,False,,8718.66
+CUST_35496CA16F,Ryan Barman,individual,IN,2023-06-18,medium,False,,24800.96
+CUST_B786157E80,Yutika Rao,individual,IN,2024-06-06,low,False,,14258.74
+CUST_EB9356F939,Balhaar Halder,individual,IN,2025-10-09,low,False,,20272.06
+CUST_6CF9760A5D,Champak Narula,individual,IN,2024-03-06,low,False,,42955.75
+CUST_8230F1FC6B,Jhalak Sarkar,individual,IN,2024-01-26,high,False,,7373.03
+CUST_A351AFDF64,Libni Nori,individual,IN,2025-02-23,low,False,,19489.83
+CUST_0C80561A88,Widisha Pillai,individual,IN,2023-05-03,low,False,,9697.8
+CUST_D60C28EE57,Fitan Samra,individual,IN,2026-03-01,high,False,,5742.87
+CUST_CF8F24D02C,Pranit Memon,individual,IN,2022-06-02,medium,False,,8522.73
+CUST_243AA923B1,Fariq Narang,individual,IN,2024-06-23,low,False,,15293.84
+CUST_EC5418C68A,Sanaya Sandhu,individual,IN,2024-04-05,medium,False,,7027.9
+CUST_73DA583D00,Indali Sekhon,individual,IN,2023-03-01,low,False,,7833.4
+CUST_723E926D53,Radhika Maharaj,individual,IN,2022-02-08,low,False,,48700.56
+CUST_F43C85BDB9,Nidra Patla,individual,IN,2022-03-27,medium,False,,6775.9
+CUST_341751B1DD,"Dutta, Balasubramanian and Dhar",business,IN,2026-02-10,medium,False,it_services,69503.35
+CUST_EB90CA4FB8,Date Inc,business,IN,2025-06-22,medium,False,import_export,250958.33
+CUST_CE963563C6,Janaki Rajagopal,individual,IN,2023-10-03,low,False,,6550.21
+CUST_B5D63C63AB,Shivani Prabhakar,individual,IN,2022-01-08,low,False,,10809.6
+CUST_CB89B2C217,Faraj Devan,individual,IN,2024-11-28,medium,False,,58625.59
+CUST_EC60C48990,Dipta Mallick,individual,IN,2024-11-13,low,False,,11158.04
+CUST_33A233BD0F,Atharv Grewal,individual,IN,2023-11-14,low,False,,18117.88
+CUST_EEE6A747F2,Jacob Lala,individual,IN,2025-12-28,low,False,,13799.57
+CUST_782FEB1DCE,Tanish Mangal,individual,IN,2023-12-17,low,False,,18473.04
+CUST_654FF48023,Jason Deshmukh,individual,IN,2025-12-04,low,False,,6188.83
+CUST_45D223B851,Orinder Saxena,individual,IN,2022-05-18,low,False,,9526.29
+CUST_5C919D0EAF,Idika Bhattacharyya,individual,IN,2022-06-29,low,False,,10440.43
+CUST_E2E47CD477,Nakul Ghosh,individual,IN,2024-03-20,low,False,,5321.02
+CUST_7E0C23FA76,Jairaj Iyer,individual,IN,2024-10-27,low,False,,23097.07
+CUST_076658587B,Wakeeta Bal,individual,IN,2022-12-05,medium,False,,9855.01
+CUST_CD3B4EAA52,Unni Dayal,individual,IN,2024-10-25,medium,False,,6616.85
+CUST_A6B198F91C,Dayamai Rao,individual,IN,2022-06-24,low,False,,10562.46
+CUST_A9EF3A5442,Nimrat Borah,individual,IN,2025-10-26,medium,False,,13238.49
+CUST_DAE80CBD07,Ethan Sengupta,individual,IN,2022-10-24,low,True,,7357.95
+CUST_FA026F7331,Kabir Gopal,individual,IN,2025-09-16,low,False,,13114.01
+CUST_AA266A4507,Yadavi Bhakta,individual,IN,2022-11-04,low,False,,26928.23
+CUST_38A7019DD3,Daksha Gala,individual,IN,2022-10-20,low,False,,7960.58
+CUST_01EF6AB5DF,Umang Pal,individual,IN,2023-02-15,medium,False,,26513.14
+CUST_0A159D210A,Farhan Krishna,individual,IN,2026-02-28,low,False,,6819.26
+CUST_401ECEE96D,Jeremiah Mitter,individual,IN,2023-06-01,medium,False,,31142.88
+CUST_4C910D055D,"Ganguly, Dube and Garg",business,IN,2022-07-17,low,False,manufacturing,260819.35
+CUST_7CD96151C5,Ayush Bumb,individual,IN,2024-08-13,low,False,,14089.54
+CUST_BF3D96C2DB,Shivansh Saha,individual,IN,2022-02-18,low,False,,37544.31
+CUST_2C4A051339,Bimala Mittal,individual,IN,2022-01-02,low,False,,8254.42
+CUST_3F716210E5,Nidra Mishra,individual,IN,2025-11-08,low,False,,29123.1
+CUST_2611C4A41E,Darpan Dugar,individual,IN,2025-08-09,low,False,,15827.85
+CUST_A9A03D91FF,Veda Shetty,individual,IN,2025-06-26,low,False,,8736.7
+CUST_9372B42FB3,Maanas Munshi,individual,IN,2023-06-25,high,False,,19231.0
+CUST_C1C3FE409F,Mohini De,individual,IN,2024-06-18,low,False,,29339.66
+CUST_550142DF7C,Eiravati Khurana,individual,IN,2024-11-24,medium,False,,9414.3
+CUST_1361D855FA,Loke Group,business,IN,2025-09-18,medium,False,retail_trade,101811.01
+CUST_1A848A953A,Chatterjee Inc,business,IN,2023-11-09,low,False,import_export,179268.69
+CUST_4230E089CF,Omya Kothari,individual,IN,2024-03-19,low,False,,19073.54
+CUST_8909940387,Munshi-Gupta,business,IN,2023-02-08,low,False,it_services,24583.14
+CUST_F871D52B83,Yutika Sibal,individual,IN,2023-02-07,medium,False,,4151.69
+CUST_940FBBCD62,Widisha Bajaj,individual,IN,2025-12-27,low,False,,5976.96
+CUST_3817FFC67D,Tiwari-Shankar,business,IN,2022-07-06,medium,False,import_export,204925.17
+CUST_DD66267CC8,Pandit Inc,business,IN,2023-10-17,low,False,retail_trade,260663.39
+CUST_075EA19C9B,Warda Singhal,individual,IN,2022-03-06,medium,False,,12283.03
+CUST_150A6936D3,Hritik Sankar,individual,IN,2024-03-05,low,False,,12624.28
+CUST_79AF88F8D9,Jasmit Rau,individual,IN,2022-11-20,medium,False,,12688.66
+CUST_766A56AAE6,Nandini Behl,individual,IN,2024-11-09,medium,False,,53116.67
+CUST_C5F05D4DB8,Bhavya Borah,individual,IN,2023-05-27,low,False,,25470.08
+CUST_0B504CC7FD,Ati Dani,individual,IN,2025-01-12,medium,False,,9196.45
+CUST_C1D7E5E04D,Meera Prakash,individual,IN,2022-11-03,low,False,,17798.22
+CUST_C2E8A3D7BC,Maanas Issac,individual,IN,2024-08-18,high,False,,28934.49
+CUST_09515ACC71,Xiti Baria,individual,IN,2026-01-28,low,False,,10366.27
+CUST_25AC92634D,Laksh Nath,individual,IN,2022-02-17,low,False,,15784.6
+CUST_D35A827B65,Manthan Varma,individual,IN,2025-10-10,medium,False,,31980.65
+CUST_645A744ED9,Eiravati Gaba,individual,IN,2022-12-08,low,False,,5597.56
+CUST_4205F94C2D,Gayathri Tripathi,individual,IN,2025-02-01,low,False,,6878.91
+CUST_91F038547C,"Suri, Mistry and Soman",business,IN,2026-01-30,low,False,real_estate,158141.51
+CUST_91416B5804,Garima Choudhary,individual,IN,2021-11-20,low,False,,16370.44
+CUST_7E34BA4724,Avi Som,individual,IN,2025-04-16,low,False,,26901.28
+CUST_1D8D46D62E,Charan Srinivasan,individual,IN,2024-01-02,low,False,,9473.0
+CUST_EF16002F35,Manbir Kibe,individual,IN,2023-03-13,low,False,,40814.36
+CUST_C6FD673600,Rayaan Bahl,individual,IN,2022-01-06,low,False,,41438.63
+CUST_3943F57190,Omya Doshi,individual,IN,2025-07-01,medium,False,,26096.1
+CUST_85E892D208,Nirja Thaker,individual,IN,2025-04-05,medium,False,,9049.28
+CUST_313DDF17F1,Lakshit Venkataraman,individual,IN,2025-10-04,low,False,,8054.96
+CUST_F79F7A25E4,Vanya Vora,individual,IN,2023-07-06,low,False,,12318.46
+CUST_FF7D1DEB23,Ghose-Sharaf,business,IN,2024-12-13,medium,False,manufacturing,437768.11
+CUST_CEC9347D49,Aishani Sule,individual,IN,2024-08-28,low,False,,7002.24
+CUST_4F75D373D5,Mallick PLC,business,IN,2023-05-20,low,False,real_estate,36218.36
+CUST_4241BC4019,Chameli Mani,individual,IN,2024-04-14,low,False,,16468.2
+CUST_514A5C4177,Edhitha Srinivasan,individual,IN,2023-07-05,medium,False,,4283.05
+CUST_7FBD718F07,"Mahal, Mani and Dara",business,IN,2024-09-17,low,False,hospitality,113123.87
+CUST_F3A9FA3F72,Pai-Dhingra,business,IN,2024-12-22,medium,False,import_export,84652.6
+CUST_B8E7EDBACF,Bhavna Brar,individual,IN,2024-03-20,low,False,,30770.14
+CUST_47E31507A3,Aahana Srinivas,individual,IN,2024-09-10,low,False,,22927.82
+CUST_D9BCE585EC,Anika Magar,individual,IN,2023-07-26,low,False,,21308.59
+CUST_803F4C458C,Wriddhish Kibe,individual,IN,2022-11-30,low,False,,7436.64
+CUST_40DC7FDE59,Viraj Ben,individual,IN,2022-03-06,medium,False,,7820.68
+CUST_B80B4C1C5F,Ganga Sodhi,individual,IN,2022-08-07,medium,False,,9743.48
+CUST_3AF2BCAA4B,Abdul Dugar,individual,IN,2022-08-08,medium,False,,13247.82
+CUST_C127C99C82,Vansha Iyengar,individual,IN,2025-03-17,low,False,,15494.59
+CUST_FEBBCA5C4D,Bhavika Bhargava,individual,IN,2024-03-10,medium,False,,14078.42
+CUST_7674C92374,Baljiwan Gill,individual,IN,2022-07-04,low,False,,6862.04
+CUST_915505F646,Balhaar Ranganathan,individual,IN,2025-04-20,low,False,,18774.1
+CUST_759552DEC3,Bimala Barad,individual,IN,2025-12-17,low,False,,10341.76
+CUST_905DC7F533,Hredhaan Nayak,individual,IN,2021-10-28,medium,False,,9651.79
+CUST_4D06920DEF,Wakeeta Desai,individual,IN,2024-03-02,low,False,,11188.87
+CUST_8964EAE0B1,Anjali Hans,individual,IN,2026-01-13,low,False,,14638.19
+CUST_E7B5E23044,Nicholas Shanker,individual,IN,2022-09-14,low,False,,10208.46
+CUST_6D29B69B10,Akshay Nazareth,individual,IN,2023-12-08,low,False,,44623.04
+CUST_F3BE3DC448,Parth Ravi,individual,IN,2024-04-03,low,False,,9060.28
+CUST_F421A8914B,Gabriel Rattan,individual,IN,2025-05-20,low,False,,12895.98
+CUST_D5D1A156DC,Logan Sood,individual,IN,2022-07-23,low,False,,5610.1
+CUST_5A4748D305,Ahuja LLC,business,IN,2024-07-01,medium,False,manufacturing,106510.09
+CUST_35E40A472C,Sanya Loke,individual,IN,2025-01-03,low,False,,12879.27
+CUST_722F1D576F,Apte-Lal,business,IN,2024-07-20,low,False,it_services,54792.75
+CUST_B4284FB217,David Dani,individual,IN,2024-10-21,low,False,,29309.99
+CUST_FC3DC79372,Dutta-Ravi,business,IN,2025-09-14,low,False,manufacturing,62660.47
+CUST_35C8209696,Jacob Merchant,individual,IN,2026-01-08,medium,False,,27252.14
+CUST_84953A4530,Theodore Deol,individual,IN,2024-11-14,medium,False,,18435.73
+CUST_E0A1B81F37,Suhani Prakash,individual,IN,2025-10-24,low,False,,22032.73
+CUST_4BC57CF54F,"Sinha, Yogi and Kamdar",business,IN,2025-04-13,low,False,manufacturing,70108.23
+CUST_EC3A61CD0A,Sanya Wable,individual,IN,2023-11-07,low,False,,15975.14
+CUST_7F8086C916,Isaac Bhatia,individual,IN,2024-10-28,low,False,,21089.76
+CUST_F3F35986F2,Mason Gala,individual,IN,2026-01-17,medium,False,,18265.64
+CUST_9D1668A6D0,Jackson Jha,individual,IN,2024-07-15,high,False,,13406.38
+CUST_9492A4B628,Yashvi Sehgal,individual,IN,2025-11-26,low,False,,6545.89
+CUST_18693F58FE,Kevin Varghese,individual,IN,2022-03-21,low,False,,11462.65
+CUST_FECDCF7151,Dalbir Shere,individual,IN,2025-04-12,medium,False,,8240.18
+CUST_1863C37C7D,"Bains, Randhawa and Kumar",business,IN,2024-05-14,medium,False,it_services,159078.63
+CUST_E41A033C46,Elijah Bath,individual,IN,2021-10-09,low,False,,12097.58
+CUST_47200E83B4,Devansh Bhasin,individual,IN,2025-05-08,low,False,,29248.45
+CUST_1BDE82FB50,Azad Mangat,individual,IN,2022-05-02,low,False,,9516.94
+CUST_418FD386C9,Krishna Salvi,individual,IN,2025-03-23,low,False,,10441.83
+CUST_978C83F01C,Saumya Purohit,individual,IN,2024-12-06,low,False,,12558.92
+CUST_21D7FA5ABC,Zacharia and Sons,business,IN,2024-12-10,low,False,hospitality,263051.7
+CUST_F9557BD4E7,Pranav Yogi,individual,IN,2024-09-14,low,False,,10496.11
+CUST_5C0AAA77C9,"Datta, Kapoor and Aggarwal",business,IN,2025-02-02,low,False,manufacturing,150153.25
+CUST_C8D4CDFCB0,Ubika Samra,individual,IN,2021-12-09,low,False,,24765.57
+CUST_1D4D47F87F,Kota Group,business,IN,2024-12-21,medium,False,hospitality,34427.16
+CUST_F7E7F35A34,Anya Gulati,individual,IN,2024-09-09,low,False,,15734.62
+CUST_0DD4A14FAE,Oni Babu,individual,IN,2022-09-15,low,False,,19736.58
+CUST_147040A4CF,Ekalinga Chaudhuri,individual,IN,2023-10-17,medium,False,,15549.16
+CUST_8D1022D892,Chanakya Konda,individual,IN,2022-01-12,low,False,,12860.71
+CUST_E881BD4954,Reva Kaur,individual,IN,2022-02-14,medium,False,,10289.37
+CUST_FCF4754EF6,Dey PLC,business,IN,2023-08-06,medium,False,hospitality,179956.33
+CUST_C5EA35985F,Eiravati Nagi,individual,IN,2024-03-16,high,False,,22769.97
+CUST_A332097DF5,Luke Verma,individual,IN,2023-10-06,medium,False,,9739.52
+CUST_5DDA16A225,Charita Maharaj,individual,IN,2023-08-17,low,False,,4310.81
+CUST_218881BC2F,Prisha Tandon,individual,IN,2022-04-07,low,False,,11184.0
+CUST_33BC5051A1,Lakshmi Vohra,individual,IN,2022-02-22,low,False,,17274.52
+CUST_8B2767944B,Nilima Dixit,individual,IN,2024-06-16,medium,False,,22913.5
+CUST_6D4A46E4D9,Qarin Yogi,individual,IN,2024-04-18,low,False,,14042.92
+CUST_7D1C23D0F4,Kar LLC,business,IN,2025-10-10,medium,False,hospitality,67935.72
+CUST_25C3F0FE85,Dalbir Sachar,individual,IN,2022-12-22,medium,False,,15663.58
+CUST_E55878DD6A,"Wagle, Desai and Rama",business,IN,2025-04-16,medium,False,retail_trade,164974.21
+CUST_371F92E6E9,Samar Narayanan,individual,IN,2023-10-24,low,False,,32352.08
+CUST_BFA9DD149B,Kamala Chanda,individual,IN,2022-06-02,medium,False,,10816.11
+CUST_18B08BD0DA,Amrita Purohit,individual,IN,2023-05-14,low,False,,7268.82
+CUST_E10950DA9E,Raghav Kalla,individual,IN,2022-01-30,low,False,,21369.55
+CUST_FC3AD145B5,Gaurangi Mitter,individual,IN,2025-10-28,low,False,,32449.73
+CUST_3DBCCEF562,Ranveer Dalal,individual,IN,2021-11-16,low,False,,19277.35
+CUST_6386A736CC,Samarth Ranganathan,individual,IN,2025-10-26,low,False,,11706.31
+CUST_8F5CFF264D,Barkha Rai,individual,IN,2023-10-13,low,False,,3863.34
+CUST_3C4C532938,Darika Lal,individual,IN,2025-09-17,low,True,,25608.71
+CUST_C819306AC7,Unnati Chaudhari,individual,IN,2024-10-21,low,False,,9447.28
+CUST_EB2D7786E4,Jani-Prabhakar,business,IN,2025-09-27,low,False,logistics,48582.75
+CUST_3247033886,Chakradev Kant,individual,IN,2024-05-29,low,False,,15696.56
+CUST_7AEAA3C0F1,Advika Sahni,individual,IN,2022-12-27,medium,False,,10514.74
+CUST_8834D0F782,Rohan Narayan,individual,IN,2024-04-04,low,False,,9029.59
+CUST_42C8C0AE7A,Korpal-Tata,business,IN,2023-09-14,medium,False,hospitality,206281.73
+CUST_F5FC90E55C,Suresh-Swaminathan,business,IN,2024-08-13,medium,True,it_services,63965.69
+CUST_D6F6BC19EE,Indira Gara,individual,IN,2025-08-31,low,False,,14572.92
+CUST_EC5FAE3694,Qarin Bhargava,individual,IN,2022-12-08,low,False,,9238.51
+CUST_37753C50A4,Chanakya Ahuja,individual,IN,2022-01-13,low,False,,33284.23
+CUST_668CEA4980,Vihaan Bir,individual,IN,2025-04-03,low,False,,9951.09
+CUST_9BF5457313,Kamdar PLC,business,IN,2023-01-12,low,False,logistics,252948.22
+CUST_A8BC377277,Darpan Subramanian,individual,IN,2025-08-16,low,False,,4720.22
+CUST_EC11D0B1A4,Abeer Wali,individual,IN,2025-11-23,medium,False,,13835.74
+CUST_F2105E67AB,Anay Wagle,individual,IN,2025-03-30,low,False,,8545.24
+CUST_AD3D8EEF3D,Anay Thakkar,individual,IN,2024-01-31,low,False,,4123.12
+CUST_93D8F41556,Hredhaan Char,individual,IN,2025-05-29,low,False,,20735.23
+CUST_2CF18CA43A,Rehaan Vyas,individual,IN,2023-01-05,low,False,,7583.19
+CUST_C2AB98A5F1,Amara Ranganathan,individual,IN,2023-11-23,low,False,,6927.46
+CUST_710D2FEB6E,Ravi-Sharaf,business,IN,2022-06-02,medium,False,hospitality,23030.02
+CUST_2B20DB30FB,Charita Buch,individual,IN,2023-10-25,low,False,,8813.92
+CUST_1B11B7BD40,Nidra Raghavan,individual,IN,2022-01-06,low,False,,11476.39
+CUST_5F9194D8D9,Daksh Andra,individual,IN,2024-12-14,medium,False,,6446.71
+CUST_C2A155032B,Xalak Saraf,individual,IN,2023-03-16,low,False,,5723.86
+CUST_9DCDA04680,Brijesh Karpe,individual,IN,2024-07-25,low,False,,27666.84
+CUST_7E73F09E0D,Anika Batra,individual,IN,2023-07-18,low,False,,41557.48
+CUST_4D17B0351A,Bachittar Gola,individual,IN,2022-05-18,low,False,,10124.79
+CUST_C207B79615,Sarthak Dhawan,individual,IN,2024-06-03,high,False,,6912.68
+CUST_D20DDC46A3,Chandani Gaba,individual,IN,2025-02-18,medium,False,,10752.71
+CUST_68A944B824,Garima Rajagopalan,individual,IN,2023-10-17,medium,False,,12631.38
+CUST_8F80380E39,"Brar, Tella and Pal",business,IN,2022-12-08,low,False,it_services,118561.36
+CUST_431278B285,Sarkar and Sons,business,IN,2022-03-15,low,False,it_services,28803.92
+CUST_C21E12BE81,Mekhala Narain,individual,IN,2022-05-24,low,False,,5476.57
+CUST_505178D048,Shravya Swaminathan,individual,IN,2021-12-31,low,False,,11713.61
+CUST_CEE189E894,Keya Sankaran,individual,IN,2023-09-08,low,False,,27906.99
+CUST_E8669DE537,Frederick Merchant,individual,IN,2023-04-30,low,False,,13858.71
+CUST_2D3619481C,Fitan Loyal,individual,IN,2023-11-04,low,False,,17968.42
+CUST_E6D4F6D5AB,Mitesh Ramachandran,individual,IN,2023-01-22,low,False,,15916.59
+CUST_A8FAE71EE1,Hredhaan Chand,individual,IN,2024-06-09,low,False,,22918.02
+CUST_6295F14261,Sai Parsa,individual,IN,2021-10-16,low,False,,5352.33
+CUST_B8EC771501,Deo Inc,business,IN,2024-01-16,medium,False,real_estate,119699.53
+CUST_7F06442BFA,Saumya Vala,individual,IN,2023-05-05,medium,False,,10753.02
+CUST_EFD644AED6,Atharv Chakraborty,individual,IN,2025-03-20,low,False,,15804.86
+CUST_33DB3EFAE0,"Chander, Nair and Rajan",business,IN,2024-10-03,low,False,real_estate,97657.58
+CUST_9EF5DC75B0,Sachdev-Rama,business,IN,2021-11-07,low,False,manufacturing,134917.44
+CUST_E75C439544,Omkaar Rai,individual,IN,2022-06-20,low,False,,15433.3
+CUST_BF2A1B9328,Amruta Mitra,individual,IN,2023-03-10,low,False,,3128.01
+CUST_8121B58372,Dhingra-Bhatnagar,business,IN,2024-01-11,low,False,hospitality,137552.21
+CUST_E9504CA53C,Majumdar-Sama,business,IN,2023-03-03,low,False,hospitality,325636.08
+CUST_8255481F2D,Bose-Patel,business,IN,2024-04-18,low,False,logistics,88591.97
+CUST_3D024C22FA,Warhi Hayre,individual,IN,2023-11-21,low,False,,24395.16
+CUST_AAD49A55D4,Krishna Modi,individual,IN,2025-08-22,low,False,,23651.37
+CUST_1EA4F190C1,Gaurangi Rai,individual,IN,2021-10-21,low,False,,25866.23
+CUST_4CE0AEAB38,Natt-Sani,business,IN,2024-07-19,low,False,it_services,64312.5
+CUST_1ED4CBD787,Ekani Iyer,individual,IN,2022-11-26,medium,False,,22336.34
+CUST_8B6CA3C649,Peter Rao,individual,IN,2025-10-27,low,False,,20297.68
+CUST_55794F2BA5,Vritti Kibe,individual,IN,2024-06-17,medium,False,,27159.23
+CUST_8A3E2B42A4,Avni Ramaswamy,individual,IN,2024-07-08,low,False,,4993.24
+CUST_BE4DFA2222,Ryan Gole,individual,IN,2024-11-07,low,False,,5016.39
+CUST_4E121FB9E6,"Shenoy, Kadakia and Sarma",business,IN,2021-12-22,medium,False,hospitality,101129.04
+CUST_F5CD4FCFAE,Nilima Tata,individual,IN,2024-03-23,low,False,,19248.04
+CUST_A45DB45254,Wyatt Krishnan,individual,IN,2022-12-06,medium,False,,12126.9
+CUST_899E885A03,Krishna Borah,individual,IN,2023-01-21,low,False,,8727.7
+CUST_4FA194C0BF,"Srinivas, Rattan and Warrior",business,IN,2025-07-26,medium,False,manufacturing,79006.63
+CUST_C97B231C53,Balhaar Parsa,individual,IN,2026-01-20,low,False,,19536.05
+CUST_AF69F5A6FD,Kothari Ltd,business,IN,2022-06-21,low,False,import_export,49824.48
+CUST_93F71EE25C,Basu PLC,business,IN,2024-10-06,low,False,import_export,129059.61
+CUST_991A6B3EA8,Qushi Cherian,individual,IN,2025-02-22,low,False,,6882.85
+CUST_718A2CF9B3,Aarna Kapadia,individual,IN,2021-11-01,medium,False,,21360.73
+CUST_3EAA7A9829,Sanaya Prasad,individual,IN,2026-02-02,low,False,,8575.96
+CUST_811568232F,Xiti Dora,individual,IN,2025-01-27,low,False,,22787.1
+CUST_5A6A461028,Vasudha Cheema,individual,IN,2024-09-05,low,False,,9175.44
+CUST_311EEA7312,Frederick D’Alia,individual,IN,2024-04-04,medium,False,,13483.57
+CUST_9FFB2D940A,Muni-Oza,business,IN,2022-12-14,low,False,import_export,49674.15
+CUST_84EF5E1686,Vasudha Pall,individual,IN,2025-08-14,low,False,,26248.2
+CUST_16CC5098D0,Sarma Ltd,business,IN,2025-10-18,low,False,retail_trade,86883.58
+CUST_F7CEACD1B7,Bhavsar-Mital,business,IN,2025-08-05,low,False,it_services,210234.18
+CUST_D05DBB88F8,Arin Oza,individual,IN,2022-02-15,low,False,,34244.02
+CUST_CF77CB8C07,Yagnesh Varty,individual,IN,2022-09-04,low,False,,6021.8
+CUST_C1F0BE1DE2,Ganga Sandhu,individual,IN,2023-03-26,low,False,,7092.32
+CUST_50378601EC,Nidhi Gour,individual,IN,2025-09-04,medium,False,,25212.39
+CUST_E748222935,Meghana Balakrishnan,individual,IN,2023-05-02,low,False,,2441.79
+CUST_97478D96DE,Pushti Ramachandran,individual,IN,2023-06-05,low,False,,13495.81
+CUST_43A340EF5D,Samesh Mallick,individual,IN,2021-10-13,low,False,,28031.19
+CUST_36FA336DE4,"Chaudry, Yadav and Grover",business,IN,2022-04-12,low,False,import_export,76414.4
+CUST_FBF0F3D459,Ronith Shankar,individual,IN,2024-11-09,medium,False,,23922.26
+CUST_91E0131459,Vrishti Wable,individual,IN,2022-09-19,low,False,,34938.75
+CUST_6EF40402E7,Manya Comar,individual,IN,2024-05-30,low,False,,33819.74
+CUST_B3F3A00ACD,Tanvi Gera,individual,IN,2024-09-14,medium,False,,8460.43
+CUST_244A82D3F2,Krish Munshi,individual,IN,2024-04-11,low,False,,4692.36
+CUST_624B595412,Mody Inc,business,IN,2022-10-01,low,False,retail_trade,108576.98
+CUST_3D1147B85D,Lohit Vaidya,individual,IN,2023-04-21,low,False,,11721.48
+CUST_BE5ACAC163,Lakshit Rajagopal,individual,IN,2025-01-18,low,False,,2742.75
+CUST_98290E3D3E,Vidhi Yogi,individual,IN,2025-05-06,low,False,,44835.02
+CUST_1524364A83,Vrishti Mani,individual,IN,2023-03-22,medium,False,,15211.24
+CUST_07BD71C390,Divya Seshadri,individual,IN,2022-12-09,high,False,,11584.03
+CUST_52E83D9E8B,Aditya Sundaram,individual,IN,2022-03-15,low,False,,14993.03
+CUST_D16DA36175,Leena Tiwari,individual,IN,2022-11-28,low,False,,24178.07
+CUST_77AB0F314B,Swamy-Sagar,business,IN,2025-12-15,medium,False,import_export,33484.68
+CUST_0200FDA736,Ganesh-Butala,business,IN,2025-07-09,medium,False,manufacturing,16013.75
+CUST_1E60D5BAEF,Brinda Bali,individual,IN,2022-01-03,low,False,,7617.68
+CUST_525A45C2BD,Bhavya Ganguly,individual,IN,2024-01-31,low,False,,8804.11
+CUST_435E1988B6,"Tandon, Vaidya and Chowdhury",business,IN,2025-08-20,medium,False,real_estate,95517.47
+CUST_44A19D29EF,Peri-Barman,business,IN,2022-09-19,low,False,manufacturing,83735.47
+CUST_1AEF3F6290,Pavani Chaudry,individual,IN,2025-07-02,low,False,,9045.2
+CUST_4EC6DAFE38,Bachittar Sengupta,individual,IN,2023-11-08,medium,False,,16243.12
+CUST_013A3FF5DE,Gagan Sarna,individual,IN,2023-12-25,low,False,,10702.67
+CUST_907C639170,Shaurya Panchal,individual,IN,2022-09-29,low,False,,11409.63
+CUST_FD0EE29F28,Dewan and Sons,business,IN,2025-05-22,medium,False,retail_trade,22729.77
+CUST_37E1C55FAF,Indali Walia,individual,IN,2023-07-04,low,False,,6950.38
+CUST_F1DC404945,"Yohannan, Ganguly and Naik",business,IN,2024-02-20,low,False,it_services,87146.23
+CUST_B5EB9F6D58,Amara Varkey,individual,IN,2024-03-27,low,False,,22135.04
+CUST_D15C14DEE8,Nisha Bhargava,individual,IN,2022-07-22,low,False,,9222.65
+CUST_67EC7ADF6D,Kevin Krish,individual,IN,2024-02-08,low,False,,17478.33
+CUST_B9296D32A3,Yug Ramaswamy,individual,IN,2022-12-28,high,False,,16691.53
+CUST_1A722B9CE9,Luthra Ltd,business,IN,2025-11-28,high,False,logistics,102577.01
+CUST_0B33D7D48D,Siya Borra,individual,IN,2025-04-08,low,False,,16303.03
+CUST_95827EBE5A,Yutika Mall,individual,IN,2022-07-16,low,False,,18568.56
+CUST_B809033DDA,Sura-Narang,business,IN,2024-11-19,medium,False,hospitality,62012.0
+CUST_D209650D18,Tara Parmar,individual,IN,2021-10-07,high,False,,12696.3
+CUST_0C887A5E42,Tejas Sanghvi,individual,IN,2022-04-14,low,False,,6336.02
+CUST_571DAF8832,Amrita Naidu,individual,IN,2023-07-20,low,False,,13308.91
+CUST_7E06E13D23,Kalpit Sundaram,individual,IN,2024-02-28,low,False,,34110.25
+CUST_D843CE3B71,"Bava, Batra and Chaudhary",business,IN,2024-09-01,low,False,manufacturing,56582.95
+CUST_345F2AC267,Dash and Sons,business,IN,2025-08-27,medium,False,it_services,41466.74
+CUST_3153A1F65C,Aadi Sangha,individual,IN,2025-07-02,low,False,,8285.79
+CUST_5E9B1BF050,Chasmum Dutt,individual,IN,2023-06-20,low,False,,16373.12
+CUST_2E01C60EA8,Patel LLC,business,IN,2024-01-29,low,False,hospitality,33681.65
+CUST_2856538C56,Noah Ben,individual,IN,2022-06-13,medium,False,,5105.35
+CUST_4612047EB5,Vivaan Sanghvi,individual,IN,2025-02-12,low,False,,17049.68
+CUST_57FF6B5AB6,Aarav Kala,individual,IN,2022-07-10,low,False,,5178.29
+CUST_C2435B4841,Kevin Kara,individual,IN,2025-10-20,medium,False,,5346.71
+CUST_F212BA22A2,Aditya Anand,individual,IN,2026-03-01,low,False,,13623.42
+CUST_4495BCDFA9,Sami Ltd,business,IN,2024-09-01,low,False,real_estate,28790.53
+CUST_5B4A49C6AE,Ekavir Karnik,individual,IN,2022-11-14,low,False,,43915.9
+CUST_6BF0016912,Harsh Chauhan,individual,IN,2025-01-02,low,False,,31151.9
+CUST_B77BBFD724,Chandani Devan,individual,IN,2024-05-30,low,False,,10475.08
+CUST_1CC55E3D60,Luke Biswas,individual,IN,2025-01-01,low,False,,10724.23
+CUST_5FA7A0A06E,Ria Panchal,individual,IN,2021-10-26,low,False,,17436.62
+CUST_F2475FB3F1,Nisha Savant,individual,IN,2023-07-23,low,False,,10025.22
+CUST_846955735F,Harish Dey,individual,IN,2023-08-05,medium,False,,23733.35
+CUST_CB85C70C8A,Indali Sanghvi,individual,IN,2022-10-17,medium,False,,9473.72
+CUST_C4F6B51242,Yug Malhotra,individual,IN,2024-06-03,low,False,,4914.94
+CUST_E00AAA3915,Bhavani Bala,individual,IN,2022-06-18,low,False,,8613.55
+CUST_CB1A73C6A6,Zarna Upadhyay,individual,IN,2024-04-24,low,True,,7230.64
+CUST_D3257DED46,Chakrika Bhagat,individual,IN,2023-05-09,high,False,,27734.27
+CUST_0F55A9BB3A,Raju-Chowdhury,business,IN,2023-10-13,low,False,real_estate,190316.61
+CUST_F74F762EEC,Ekavir Wable,individual,IN,2023-10-19,medium,False,,10135.93
+CUST_4754401580,Nadig-Deo,business,IN,2021-11-06,medium,False,hospitality,39800.36
+CUST_332F95E6D5,Jasmit Gera,individual,IN,2025-01-13,low,False,,9329.57
+CUST_C5174F9A5E,Anay Bir,individual,IN,2025-10-02,medium,False,,15323.55
+CUST_191C327D2A,Tanveer Baral,individual,IN,2021-11-11,low,False,,5150.87
+CUST_B1E8B6D847,Yashawini Mangat,individual,IN,2022-04-05,medium,False,,21498.98
+CUST_F8613F4D93,Pallavi Ratti,individual,IN,2026-01-03,low,False,,25569.75
+CUST_9D0870D0AE,Arunima Chacko,individual,IN,2022-06-13,medium,False,,24277.84
+CUST_4461D4520C,Yasti Jani,individual,IN,2024-05-19,medium,False,,9685.88
+CUST_8CA27E1EBA,Mahika Bhatti,individual,IN,2023-01-25,low,False,,18472.06
+CUST_BB5CB7EB8B,"Sarkar, Khare and Bhardwaj",business,IN,2024-05-20,medium,False,real_estate,163879.92
+CUST_AFFC8CCF63,Radha D’Alia,individual,IN,2023-10-29,low,False,,14083.81
+CUST_C1E9EAE44C,Dayamai Gill,individual,IN,2025-08-08,medium,False,,12885.1
+CUST_517521B4A4,Laksh Apte,individual,IN,2022-10-06,medium,False,,17551.19
+CUST_251DC46391,Idika Virk,individual,IN,2023-02-21,high,False,,39796.49
+CUST_EC60F7FB02,"Lad, Ganesan and Prabhu",business,IN,2026-02-22,low,False,it_services,101920.58
+CUST_0DA3593F09,Jacob Balan,individual,IN,2022-10-29,low,False,,6834.34
+CUST_C9134F2529,Magar-Viswanathan,business,IN,2024-08-05,low,False,manufacturing,43928.74
+CUST_1BC66C383D,Faraj Taneja,individual,IN,2022-04-16,low,False,,13930.67
+CUST_0A29885545,Christopher Tata,individual,IN,2025-08-14,low,False,,9101.02
+CUST_735A115FC6,Nakul Kumer,individual,IN,2023-03-02,low,False,,8856.23
+CUST_670CCC4D74,Vedant Upadhyay,individual,IN,2022-08-15,low,False,,12198.48
+CUST_DC53118320,Advik Konda,individual,IN,2021-10-07,low,False,,18483.51
+CUST_C97C320AF7,Januja Rajagopal,individual,IN,2022-02-19,low,False,,12184.37
+CUST_46CD8E6BF2,Balendra Saini,individual,IN,2023-01-09,low,False,,11197.45
+CUST_9CBD80A33F,Yuvraj Saha,individual,IN,2023-08-28,low,False,,9732.03
+CUST_2E0CDD2639,Faras Pradhan,individual,IN,2024-06-20,low,False,,33128.82
+CUST_0105D03A57,Praneel Kapoor,individual,IN,2022-10-05,low,False,,9246.34
+CUST_8E5CF5B9D7,Nandini Biswas,individual,IN,2026-02-18,low,False,,4682.22
+CUST_1D664953E6,Deepa Narang,individual,IN,2025-09-13,low,False,,12371.8
+CUST_815B644574,Abhiram Pillay,individual,IN,2022-06-25,low,False,,12707.78
+CUST_C52586607A,Daksha Kibe,individual,IN,2023-06-15,low,False,,14934.3
+CUST_DF8D65BE34,Wakeeta Hayre,individual,IN,2025-09-10,low,True,,27281.03
+CUST_A134DE9B41,Abeer Rout,individual,IN,2023-10-31,low,False,,24543.58
+CUST_6038F15EDD,Hiral Andra,individual,IN,2021-12-13,medium,False,,11743.48
+CUST_CFFCC1555D,Krisha Mohanty,individual,IN,2024-08-05,medium,False,,15773.33
+CUST_DF45A69E6D,Wazir Saini,individual,IN,2022-08-18,low,False,,10978.88
+CUST_40621A991D,Dhar Ltd,business,IN,2025-12-06,low,False,it_services,26934.3
+CUST_7BCA056F88,Caleb Kata,individual,IN,2024-02-16,low,False,,7953.48
+CUST_B495DCC4B8,Kashish Shanker,individual,IN,2026-03-02,medium,False,,12276.51
+CUST_0872AC7138,Yashasvi Deol,individual,IN,2022-06-20,low,False,,13487.04
+CUST_2A9A6637B2,David Saran,individual,IN,2025-02-06,low,False,,12682.1
+CUST_4947C1CBE5,Bishakha Lal,individual,IN,2022-11-10,low,False,,16572.66
+CUST_664EABB864,Eta Nadkarni,individual,IN,2024-06-04,low,False,,18784.08
+CUST_16ACB03706,Vivaan Borde,individual,IN,2025-08-06,low,False,,37160.75
+CUST_6D5FCFF2E8,Ikbal Dugal,individual,IN,2023-06-21,low,False,,11153.6
+CUST_3BC3218ED3,Sengupta Group,business,IN,2022-08-24,medium,False,it_services,32198.15
+CUST_B7C5558D4A,Jai Wason,individual,IN,2024-06-01,medium,False,,15124.4
+CUST_A65B8C5801,Siya Morar,individual,IN,2024-10-17,low,False,,14651.52
+CUST_2EFF72702A,Jagdish Chana,individual,IN,2025-09-08,low,False,,21160.27
+CUST_A8804FD382,"Modi, Baria and Kale",business,IN,2023-02-01,low,False,hospitality,547493.84
+CUST_403FA8E204,Gavin Kothari,individual,IN,2024-07-14,medium,False,,8515.46
+CUST_FA07C370F5,Yochana Bawa,individual,IN,2024-10-09,low,False,,10022.31
+CUST_B4FF7E88D0,Owen Balasubramanian,individual,IN,2024-04-15,low,False,,4609.6
+CUST_B630689880,Zaid Chandra,individual,IN,2025-03-09,low,False,,15540.99
+CUST_A2BAC7BE64,Logan Dara,individual,IN,2025-09-04,low,False,,10660.71
+CUST_C03C3BA4E1,Tristan De,individual,IN,2021-11-06,low,False,,18501.79
+CUST_BEBE9FD36B,Pradhan-Chad,business,IN,2023-06-07,medium,False,logistics,42998.14
+CUST_C2D41D0160,Anthony Bhattacharyya,individual,IN,2023-12-13,low,False,,14182.49
+CUST_3C104AB6DC,Kabir Chanda,individual,IN,2023-06-06,low,False,,4935.19
+CUST_DE0FE6E890,Basak Group,business,IN,2024-07-26,medium,False,logistics,39480.79
+CUST_CDAD9D3A25,Rachita Rana,individual,IN,2022-03-06,medium,False,,5895.69
+CUST_C7FFD7A4E8,Lavanya Sandhu,individual,IN,2025-12-19,low,False,,5765.2
+CUST_7AA390D55B,Kala-Grover,business,IN,2023-03-20,low,False,manufacturing,99854.12
+CUST_D7641F34D1,Sehgal-Dixit,business,IN,2024-02-01,medium,False,hospitality,40846.7
+CUST_4B49CC1E08,Chakrika Tara,individual,IN,2022-01-15,low,False,,16571.04
+CUST_611CE6871D,Darsh Chahal,individual,IN,2025-04-02,low,False,,14289.25
+CUST_83CD69BCF6,Laksh Saini,individual,IN,2024-02-16,low,True,,38054.84
+CUST_CB6A0AB9C6,Anirudh Raja,individual,IN,2023-06-11,medium,False,,8368.3
+CUST_D41FFBED9F,Vedhika Padmanabhan,individual,IN,2024-10-19,low,False,,11240.34
+CUST_E6D52FDDA7,Lipika Madan,individual,IN,2026-01-07,low,False,,8585.31
+CUST_1C584D78A9,Nagar PLC,business,IN,2023-04-11,low,False,logistics,56455.55
+CUST_245EBA7D31,Avni Bhardwaj,individual,IN,2023-08-11,low,False,,25630.95
+CUST_CD244982BB,Viraj Dutta,individual,IN,2025-10-04,low,False,,25163.03
+CUST_0BFAE3F8C9,Khosla LLC,business,IN,2022-08-07,low,False,real_estate,120749.01
+CUST_F2DC9439FB,Lipika Pant,individual,IN,2022-03-22,low,False,,7706.88
+CUST_126910541E,Warjas Nadkarni,individual,IN,2023-03-23,low,False,,12341.81
+CUST_2FA408CCEA,Indira Dhar,individual,IN,2024-10-18,low,True,,14854.42
+CUST_17DFBBA3DC,Dayamai Gill,individual,IN,2023-05-07,low,False,,45124.35
+CUST_CA25066EAD,Gautam Bhalla,individual,IN,2025-12-01,low,True,,23744.02
+CUST_8E74BC3FF5,Anmol Vyas,individual,IN,2023-09-22,low,False,,16595.14
+CUST_E0E9544C80,Garima Jaggi,individual,IN,2025-10-24,low,False,,16366.76
+CUST_13B9239C21,Peter Naik,individual,IN,2022-11-09,low,False,,12656.49
+CUST_3DC9A0DB75,Manbir Dhar,individual,IN,2022-04-03,low,False,,24686.98
+CUST_E08B90857C,"Patla, Bora and Prakash",business,IN,2022-09-09,low,False,logistics,79176.77
+CUST_53459C32CD,Gayathri Mittal,individual,IN,2025-02-10,high,False,,23492.06
+CUST_70DA1FFCB5,Nakul Sarkar,individual,IN,2024-06-28,low,False,,11193.99
+CUST_4101780549,"Nadig, Ghosh and Parikh",business,IN,2025-11-21,low,False,real_estate,289798.93
+CUST_8EE5393AE1,Kritika Mohanty,individual,IN,2023-08-24,low,False,,11943.43
+CUST_D98C3EF8FA,Peter Agarwal,individual,IN,2024-04-02,medium,False,,9222.8
+CUST_6C5E3D6AA8,Qabil Nadkarni,individual,IN,2025-01-28,low,False,,11785.53
+CUST_825ED9BEF5,Watika Dhaliwal,individual,IN,2023-08-17,medium,False,,47385.96
+CUST_EDDAD2F106,Wazir Palan,individual,IN,2024-07-24,low,False,,30882.91
+CUST_5068BB6AA1,Gaurang Nayak,individual,IN,2024-06-18,medium,False,,17133.46
+CUST_5AD661ED15,Alka Kadakia,individual,IN,2025-07-18,low,False,,8669.93
+CUST_77F772E4E0,Inaya Kunda,individual,IN,2023-11-14,medium,False,,18348.42
+CUST_5068CFEC41,"Agarwal, Bava and Raju",business,IN,2022-08-31,medium,False,manufacturing,184850.39
+CUST_A420B19F82,Ojas Sachdev,individual,IN,2025-06-22,low,False,,16096.46
+CUST_B3B4B71257,Indali Prashad,individual,IN,2025-12-09,medium,False,,9152.78
+CUST_F79C431889,Umang Gaba,individual,IN,2022-08-11,low,False,,7296.62
+CUST_4E081650B6,Bandi LLC,business,IN,2025-08-02,low,False,it_services,117926.04
+CUST_48CDC52692,Advika Cheema,individual,IN,2021-12-01,medium,False,,10020.6
+CUST_34A4B9E660,Onkar Prashad,individual,IN,2022-05-18,low,False,,14171.47
+CUST_746EA30C4F,Girik Nigam,individual,IN,2023-02-11,low,False,,12942.91
+CUST_7CA331BDD3,Raagini Gala,individual,IN,2025-11-07,low,False,,5347.81
+CUST_8CFDFAD864,Chatresh Chaudhuri,individual,IN,2025-06-10,medium,False,,19355.36
+CUST_66D95A10A3,Ranveer Rout,individual,IN,2024-07-24,low,False,,7557.88
+CUST_0E6A260880,Chameli Khanna,individual,IN,2024-01-02,low,False,,31597.74
+CUST_1A25C35522,Maya Swaminathan,individual,IN,2022-07-25,medium,False,,9673.81
+CUST_B549473388,Jalsa Aggarwal,individual,IN,2023-01-20,low,False,,13907.03
+CUST_0A291988AD,Menon Ltd,business,IN,2025-05-20,low,False,it_services,67824.64
+CUST_4B34CE5D3A,Gunbir Bal,individual,IN,2025-10-31,low,False,,19668.56
+CUST_F1F288BD2C,Manne Inc,business,IN,2023-07-04,low,False,logistics,132571.93
+CUST_2EAF502C85,Morar Group,business,IN,2025-10-10,low,False,real_estate,127081.03
+CUST_431062F21C,Alka Chand,individual,IN,2025-10-02,low,False,,27691.43
+CUST_D1DCD1BD47,Kamala Raj,individual,IN,2025-01-16,low,False,,9334.37
+CUST_B7A8FE90E4,Sanaya Basu,individual,IN,2024-11-20,low,False,,29760.64
+CUST_F1642FC891,Udyati Lall,individual,IN,2023-12-27,medium,False,,19493.76

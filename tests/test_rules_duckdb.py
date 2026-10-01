@@ -1,45 +1,23 @@
-"""Run the real detection SQL on DuckDB against planted typologies, no Snowflake needed.
+"""Detection rules on planted typologies, no Snowflake needed. Checks the logic itself;
+tests/run_on_data.py measures the real generated data.
 
     pip install duckdb && python3 tests/test_rules_duckdb.py
-
-Only Snowflake-only syntax is translated (OBJECT_CONSTRUCT, FLATTEN, VALUES-as-view);
-the rule logic itself is the exact text in sql/.
 """
 import random
-import re
-import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
-import duckdb
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "detection"))
-from cycles import find_cycles, to_alert  # noqa: E402
+from duck import connect, detect_and_evaluate, run_sql_file
 
 random.seed(7)
 T0 = datetime(2026, 1, 1)
-db = duckdb.connect()
-
-
-def run_sql_file(name, skip=()):
-    text = re.sub(r"--[^\n]*", "", (ROOT / "sql" / name).read_text())
-    text = text.replace("OBJECT_CONSTRUCT(", "json_object(")
-    for stmt in filter(str.strip, text.split(";")):
-        if not any(s in stmt for s in skip):
-            db.execute(stmt)
-
-
+db = connect()
 db.execute("""
-CREATE SEQUENCE alert_seq;
 CREATE TABLE CUSTOMERS (CUSTOMER_ID VARCHAR, RISK_RATING VARCHAR);
 CREATE TABLE ACCOUNTS (ACCOUNT_ID VARCHAR, CUSTOMER_ID VARCHAR);
 CREATE TABLE TRANSACTIONS (TXN_ID VARCHAR, FROM_ACCOUNT_ID VARCHAR, TO_ACCOUNT_ID VARCHAR,
     AMOUNT DOUBLE, CURRENCY VARCHAR, CHANNEL VARCHAR, COUNTERPARTY_COUNTRY VARCHAR, TXN_TS TIMESTAMP);
-CREATE TABLE TXN_LABELS (TXN_ID VARCHAR, TYPOLOGY VARCHAR);
-CREATE TABLE ALERTS (ALERT_ID INTEGER DEFAULT nextval('alert_seq'), RULE VARCHAR, ACCOUNT_ID VARCHAR,
-    TXN_IDS VARCHAR[], SEVERITY VARCHAR, EVIDENCE JSON, STATUS VARCHAR DEFAULT 'OPEN',
-    CREATED_AT TIMESTAMP DEFAULT current_timestamp);
+CREATE TABLE TXN_LABELS (TXN_ID VARCHAR, ACCOUNT_ID VARCHAR, TYPOLOGY VARCHAR);
+CREATE TABLE RAW_HIGH_RISK_COUNTRIES (country_code VARCHAR);
 """)
 
 accts = [f"AC{i:05d}" for i in range(2000)]
@@ -56,7 +34,7 @@ def tx(frm, to, amt, ch, ts, country="US", label=None):
     tid = f"T{n:07d}"
     txns.append((tid, frm, to, round(amt, 2), "USD", ch, country, ts))
     if label:
-        labels.append((tid, label))
+        labels.append((tid, frm or to, label))
 
 
 # background: ordinary activity, steady per account so velocity has a baseline
@@ -74,10 +52,17 @@ for _ in range(20):  # structuring: 3-5 cash deposits just under $10k within a w
     for _ in range(random.randint(3, 5)):
         ts += timedelta(hours=random.randint(4, 36))
         tx(None, a, random.uniform(8200, 9950), "CASH", ts, label="STRUCTURING")
-for _ in range(20):  # velocity: one day far above the account's normal level
+for _ in range(20):  # velocity: a burst of 4-6 payments in a day, far above normal
     a, ts = next(bad), T0 + timedelta(days=random.randint(100, 170))
-    for _ in range(random.randint(3, 6)):
-        tx(a, None, random.uniform(15000, 40000), "WIRE", ts + timedelta(minutes=random.randint(0, 600)), label="VELOCITY")
+    for _ in range(random.randint(4, 6)):
+        tx(a, None, random.uniform(5000, 20000), "WIRE", ts + timedelta(minutes=random.randint(0, 1200)), label="VELOCITY")
+for _ in range(20):  # pass-through: big inflow, most of it out again within a day or two
+    a, ts = next(bad), T0 + timedelta(days=random.randint(0, 170))
+    amt = random.uniform(100000, 500000)
+    tx(None, a, amt, "WIRE", ts, label="LAYERING")
+    for share in (0.3, 0.25, 0.2):
+        ts += timedelta(hours=random.randint(1, 15))
+        tx(a, None, amt * share, "ACH", ts, label="LAYERING")
 for _ in range(10):  # geo: black-list wire
     tx(next(bad), None, random.uniform(5000, 90000), "WIRE",
        T0 + timedelta(days=random.randint(0, 170)), random.choice(["IR", "KP", "MM"]), label="GEO_RISK")
@@ -92,38 +77,21 @@ for _ in range(20):  # round trip / layering cycles
     amt, ts = random.uniform(30000, 300000), T0 + timedelta(days=random.randint(0, 170))
     for h in range(hops):
         ts += timedelta(hours=random.randint(2, 30))
-        tx(path[h], path[(h + 1) % hops], amt, "INTERNAL", ts, label="ROUND_TRIP" if hops == 2 else "LAYERING")
+        tx(path[h], path[(h + 1) % hops], amt, "INTERNAL", ts, label="ROUND_TRIP")
         amt *= random.uniform(0.95, 0.995)
 
 db.executemany("INSERT INTO TRANSACTIONS VALUES (?,?,?,?,?,?,?,?)", txns)
-db.executemany("INSERT INTO TXN_LABELS VALUES (?, ?)", labels)
-
-run_sql_file("05_reference.sql")
-run_sql_file("20_detection_rules.sql", skip=("ALERT_TXNS AS",))
-
-# cycle rule: same python the Snowpark proc runs
-rows = db.execute("SELECT TXN_ID, FROM_ACCOUNT_ID, TO_ACCOUNT_ID, AMOUNT, TXN_TS FROM TRANSACTIONS "
-                  "WHERE FROM_ACCOUNT_ID IS NOT NULL AND TO_ACCOUNT_ID IS NOT NULL").fetchall()
-for a in map(to_alert, find_cycles(rows)):
-    db.execute("INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE) VALUES (?,?,?,?,?)",
-               [a["RULE"], a["ACCOUNT_ID"], a["TXN_IDS"], a["SEVERITY"], str(a["EVIDENCE"]).replace("'", '"')])
-
-db.execute("CREATE VIEW ALERT_TXNS AS SELECT ALERT_ID, RULE, unnest(TXN_IDS) AS TXN_ID FROM ALERTS")
-db.execute("CREATE VIEW RULE_TYPOLOGY AS SELECT * FROM (VALUES ('STRUCTURING','STRUCTURING'),"
-           "('VELOCITY','VELOCITY'),('GEO_RISK','GEO_RISK'),('ROUND_TRIP_CYCLE','ROUND_TRIP'),"
-           "('ROUND_TRIP_CYCLE','LAYERING')) v(RULE, TYPOLOGY)")
-run_sql_file("30_evaluate.sql", skip=("ALERT_TXNS AS", "RULE_TYPOLOGY AS"))
-
+db.executemany("INSERT INTO TXN_LABELS VALUES (?, ?, ?)", labels)
+run_sql_file(db, "05_reference.sql")
 print(f"{len(txns)} txns, {len(labels)} labelled")
-metrics = db.execute("SELECT * FROM RULE_METRICS").fetchall()
-cols = [d[0] for d in db.description]
-print(" | ".join(cols))
-for r in metrics:
-    print(" | ".join(str(v) for v in r))
+metrics = detect_and_evaluate(db)
 
-for rule, alerts, true_alerts, precision, typ_precision, labelled, caught, recall in metrics:
-    assert recall is not None and recall >= 0.9, f"{rule} recall {recall}"
-    assert precision is not None and precision >= 0.95, f"{rule} precision {precision}"
+cols = [d[0] for d in db.execute("SELECT * FROM RULE_METRICS LIMIT 0").description]
+for row in metrics:
+    m = dict(zip(cols, row))
+    assert m["CASE_RECALL"] == 1.0, m
+    assert m["PRECISION"] >= 0.95, m
+
 # §7.2: high-risk customers' alerts are escalated in the view, never in ALERTS itself
 bumped = db.execute("SELECT COUNT(*) FROM ALERT_QUEUE WHERE RISK_RATING = 'HIGH' AND SEVERITY = 'MEDIUM' "
                     "AND EFFECTIVE_SEVERITY <> 'HIGH'").fetchone()[0]
