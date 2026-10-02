@@ -68,13 +68,13 @@ flowchart TB
     subgraph IF["Interfaces"]
         direction LR
         COCO["CoCo CLI skills<br/>$aml-detect · $aml-investigate · $sar-draft"]
-        APP["Streamlit command centre<br/>planned"]
+        APP["Streamlit command centre<br/>officer copy · auditor copy"]
     end
 
     subgraph AI["AI & evidence — explains, never decides"]
         direction LR
         CSS["Cortex Search<br/>policy + FinCEN + FATF clauses"]
-        AGT["Cortex Agent + Analyst<br/>semantic view · planned"]
+        AGT["Cortex Agent AML_COPILOT<br/>Analyst on semantic view"]
     end
 
     subgraph FND["Findings — audit trail"]
@@ -97,7 +97,7 @@ flowchart TB
         REF["FATF_JURISDICTIONS"]
     end
 
-    GOV["🔒 Governance — masking policies · roles · append-only grants · planned"]
+    GOV["🔒 Governance — 3 roles · PII-masking secure views · append-only grants"]
 
     U --> IF
     IF --> AI
@@ -119,10 +119,10 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 | 1 · Data | Stages, `COPY INTO`, tables, file formats | ✅ Live on Snowflake |
 | 2 · Detection | SQL, Snowpark Python stored procedure | ✅ Live on Snowflake |
 | 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (119 chunks, 3 documents) |
-| 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | Planned |
-| 4 · Finding | Tables + role grants (append-only) | ✅ Tables live; grants planned |
-| 5 · Governance | Masking policies, RBAC roles, tags | Planned |
-| App | Streamlit in Snowflake | Planned |
+| 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | ✅ Live; answers verified against hand-written SQL |
+| 4 · Finding | Tables + role grants (append-only) | ✅ Live; append-only enforced by grants |
+| 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 30/30 role checks pass |
+| App | Streamlit in Snowflake (two copies, owner's rights) | ✅ Live; full flow tested through the UI |
 | Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ `$aml-detect` verified in CoCo v1.1.87 |
 
 ---
@@ -217,6 +217,33 @@ The internal policy (`corpus/internal_aml_policy.md`) is a fictional bank's moni
 written for this project. Every detection rule is a numbered clause in it, which is what
 lets the copilot say *which rule* an account broke and *where that rule is written down*.
 
+### 4.4 Question pipeline — plain English to governed answers
+
+```mermaid
+flowchart LR
+    Q["Analyst question<br/>Streamlit chat"] --> AG["Cortex Agent<br/>AML_COPILOT · claude-sonnet-4-5"]
+    AG -->|"data questions"| AN["Cortex Analyst"]
+    AN --> SV["AML_SEMANTIC_VIEW<br/>business names, synonyms, metrics"]
+    SV --> SEC["CUSTOMER_PROFILE secure view<br/>masks names by role"]
+    SV --> AA["ACCOUNT_ACTIVITY · ALERT_FACTS · FINDINGS"]
+    AG -->|"policy questions"| CS["Cortex Search<br/>AML_POLICY_SEARCH"]
+    AN --> A["Answer + table + generated SQL"]
+    CS --> A
+```
+
+The semantic view gives the model business meaning instead of raw columns: "cash deposits"
+is `CHANNEL = 'CASH' AND DIRECTION = 'IN'`, "high-risk" is `RISK_RATING = 'HIGH'`, and
+`SEVERITY_REASON` is the only allowed explanation of a severity. Every query runs as the
+asking role, so an auditor's answer comes back with names masked, by Snowflake, not by the app.
+
+| Question asked | Tools used | Checked |
+|---|---|---|
+| "How many open alerts are there by rule and severity?" | AmlData | Matches `ALERT_QUEUE` |
+| "Which 3 high-risk customers deposited the most cash?" | AmlData | Matches hand-written SQL to the cent ($75,815.11 / $54,553.74 / $52,167.09) |
+| "What does our policy say about structuring?" | AmlPolicy | Quotes §3.1–3.3 and the $10,000 CTR line |
+| "Why was alert 37 raised, why is it CRITICAL?" | AmlData + AmlPolicy | §3.3, 4 txn IDs, $38,296.10, and the stored §7.2 reason |
+| Same cash question, as **AUDITOR** | AmlData | Same numbers, names `*** masked ***` |
+
 ---
 
 ## 5. The analyst process — signal to SAR
@@ -258,6 +285,12 @@ sequenceDiagram
 | Disposition | The **analyst**, by name, with a reason | `FINDINGS`: decision, analyst, reason, evidence txns, clauses, role, timestamp |
 | SAR draft | The AI drafts, **only after** a human escalation | `SAR_REPORTS`: narrative, cited txns, cited sources, status `DRAFT` |
 | Filing | The **compliance officer** | `SAR_REPORTS.STATUS` → `APPROVED` / `FILED` |
+
+The same flow runs in the **Streamlit command centre**: alert queue → *Investigate* tab
+(evidence, KYC, linked alerts, the policy clause text from Cortex Search, decision form) →
+*SARs* tab (Cortex AI draft with `claude-sonnet-4-5`, citation check, officer approval, which
+stays disabled until every cited transaction verifies) → *Audit* tab (decision log, rule
+metrics). *Ask the copilot* is a chat over the Cortex Agent.
 
 ### CoCo skills
 
@@ -357,15 +390,31 @@ TXN_LABELS   (TXN_ID, ACCOUNT_ID, TYPOLOGY)  -- ground truth; detection never re
 
 ---
 
-## 7. Governance (planned)
+## 7. Governance
 
-| Control | Implementation | Shows in the demo as |
-|---|---|---|
-| PII masking | Masking policy on `CUSTOMERS.NAME`, account IDs; tag-based | Auditor role sees `***MASKED***` |
-| Least privilege | Roles `AML_ANALYST`, `COMPLIANCE_OFFICER`, `AUDITOR` | Switching role changes what is visible |
-| Append-only decisions | `AML_ANALYST` gets `INSERT, SELECT` on `FINDINGS`, never `UPDATE/DELETE` | A decision cannot be rewritten |
-| Ground-truth isolation | No detection role can read `TXN_LABELS` | Evaluation is honest |
-| Point-in-time evidence | Time Travel on `TRANSACTIONS`, `ALERTS` | What the analyst saw when they decided |
+Three roles (`sql/80_governance.sql`), checked live by `scripts/check_governance.py`: **30 / 30 pass**.
+
+| Role | Customer names | Record a decision | Edit / delete a decision | Approve a SAR | Fraud labels |
+|---|---|---|---|---|---|
+| `AML_ANALYST` | visible | ✅ | ❌ | ❌ | ❌ |
+| `COMPLIANCE_OFFICER` | visible | ✅ | ❌ | ✅ | ❌ |
+| `AUDITOR` | `*** masked ***` (tables, semantic view, agent answers, SAR narratives) | ❌ | ❌ | ❌ | ❌ |
+
+| Control | How |
+|---|---|
+| Append-only decisions | Analysts get `INSERT` on `FINDINGS` and `SAR_REPORTS`, never `UPDATE` / `DELETE`. `FINDINGS.DECIDED_BY_ROLE` records the role that made each decision |
+| PII masking | `CUSTOMER_PROFILE` and `SAR_REVIEW` secure views mask by `CURRENT_ROLE()`; the auditor has no grant on any table that holds a name; the semantic view reads customers through the secure view |
+| Ground-truth isolation | No role that works alerts can read `TXN_LABELS` / `RAW_LABELS`; `RULE_METRICS` still works for them because a view runs with its owner's rights |
+| App enforcement | The Streamlit app is deployed twice, created by `COMPLIANCE_OFFICER` and by `AUDITOR`. An app runs with its owner's role, so what each copy can see and write is Snowflake's decision, not the app's |
+
+Two things we learned building it:
+
+- **Masking policies need Enterprise edition.** The CoCo trial is Standard (`Unsupported feature
+  'MASKING POLICY'`), so masking is done with secure views. On Enterprise the same columns would
+  take a `PII` tag with a tag-based masking policy.
+- **`DEFAULT_SECONDARY_ROLES = ('ALL')` is the default for users.** A session "as AUDITOR" then
+  still carries the user's other roles, and every permission check passes for the wrong reason.
+  Masking keys on `CURRENT_ROLE()` and the governance check runs `USE SECONDARY ROLES NONE`.
 
 ---
 
@@ -441,7 +490,13 @@ python3 scripts/deploy.py --only 20_detection_rules.sql 30_evaluate.sql   # reru
 ```
 
 Order: `01_load_raw → 02_canonical → 05_reference → 10_alerts_and_cycle_proc → 20_detection_rules
-→ 30_evaluate → 50_findings → 40_cortex_search`. Every script is idempotent.
+→ 30_evaluate → 50_findings → 40_cortex_search → 60_semantic_view → 70_agent → 80_governance
+→ 90_streamlit`. Every script is idempotent; `80` and `90` must run last (recreating a table drops
+its grants).
+
+For unattended runs, use key-pair auth instead of the browser login (which expires hourly):
+generate a key with `openssl`, `ALTER USER <you> SET RSA_PUBLIC_KEY = '…'`, and add a connection
+with `authenticator = "SNOWFLAKE_JWT"` and `private_key_file`. Keep the key out of the repo.
 
 What it creates:
 
@@ -454,6 +509,9 @@ What it creates:
 | Evaluation | views `RULE_TYPOLOGY`, `RULE_METRICS` |
 | Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (119 chunks), Cortex Search service `AML_POLICY_SEARCH` |
 | Findings | `FINDINGS`, `SAR_REPORTS`, view `SAR_CITATION_CHECK` |
+| Question layer | views `ACCOUNT_ACTIVITY`, `ALERT_FACTS`; semantic view `AML_SEMANTIC_VIEW`; agent `AML_COPILOT` |
+| Governance | roles `AML_ANALYST`, `COMPLIANCE_OFFICER`, `AUDITOR`; secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` |
+| App | stage `APP_STAGE`; Streamlit `AML_COMMAND_CENTRE` (officer), `AML_AUDIT_VIEW` (auditor) |
 
 ### 9.3 Use it from CoCo
 
@@ -499,6 +557,11 @@ checked against the database by query.
 | T5 | `$aml-investigate` on a money loop | ✅ Showed the 3-hop loop **and** linked the middle account's own pass-through alert |
 | T6 | Dismiss a false-positive velocity alert | ✅ `DISMISSED`, reason recorded |
 | T7 | Rerun all detection after a decision | ✅ 68 → 68 alerts, ids/keys/statuses identical (`scripts/check_rerun_stable.py`) |
+| T8 | Agent: data, policy and mixed questions | ✅ Answers verified against hand-written SQL (section 4.4) |
+| T9 | Governance, every role × every action | ✅ 30 / 30 (`scripts/check_governance.py`) |
+| T10 | App renders as officer and as auditor | ✅ 0 exceptions; officer sees names + decision form; auditor sees masks, no form (`tests/test_app.py`) |
+| T11 | Full flow **through the UI**: escalate → AI SAR → approve | ✅ Finding recorded with role `COMPLIANCE_OFFICER`; 308-word SAR; citations 4 / 4; approved (`tests/test_app_flow.py`) |
+| T12 | Chat through the UI, as officer and as auditor | ✅ Same numbers; auditor's table masked (`tests/test_app_chat.py`) |
 
 What testing caught and fixed along the way:
 
@@ -510,6 +573,8 @@ What testing caught and fixed along the way:
 | Said severity was raised "because of a linked alert" (it was the customer's risk rating) | `SEVERITY_REASON` column; skills repeat it verbatim |
 | **Rerunning detection renumbered every alert**, orphaning findings and SARs | Stable alert keys; regression test escalates, reruns, compares |
 | Identical-amount bursts tied; Snowflake picked a different window per run (68 → 72 alerts) | Total-order tie-breaks; test shuffles row order, fails 3/3 without the fix |
+| Agent said CRITICAL meant "pattern across linked accounts" | `SEVERITY_REASON` exposed in the semantic view; agent told to repeat it |
+| Auditor could read names: masking policies unsupported on Standard | Secure views; auditor's table grants revoked; verified masked through the agent too |
 
 ### 9.5 Locally, no Snowflake needed
 
@@ -521,6 +586,14 @@ python3 detection/cycles.py           # cycle detector self-check
 python3 tests/test_rules_duckdb.py    # every rule on planted typologies: case recall 1.0, rerun stable
 python3 tests/run_on_data.py          # full pipeline on data/: RULE_METRICS + rerun stable
 python3 scripts/check_rerun_stable.py # same rerun check, live on Snowflake
+python3 scripts/check_governance.py   # every role x every action, live on Snowflake
+
+# the app, headless against live Snowflake (Python 3.11: streamlit==1.39.0, snowflake-snowpark-python)
+APP_ROLE=COMPLIANCE_OFFICER python tests/test_app.py
+APP_ROLE=AUDITOR            python tests/test_app.py
+APP_ROLE=COMPLIANCE_OFFICER python tests/test_app_flow.py 37   # escalate -> SAR -> approve, cleans up
+APP_ROLE=AUDITOR            python tests/test_app_chat.py
+streamlit run streamlit/streamlit_app.py                       # or run it locally
 ```
 
 ### 9.6 Gotchas we hit
@@ -533,6 +606,11 @@ python3 scripts/check_rerun_stable.py # same rerun check, live on Snowflake
 | Tables in one account, credits in another | Wizard set Agent and SQL connections to different accounts | One connection only, set as default |
 | `cortex sql …` hung | Not a real subcommand; it opened an interactive session | Use `scripts/deploy.py` or the skills |
 | `AT` alias failed | Reserved word in DuckDB and Snowflake (Time Travel) | Renamed alias |
+| `SEMANTIC_VIEW(... DIMENSIONS (a.b))` → "SELECT list element with multiple columns" | Parentheses make a tuple | Write `DIMENSIONS a.b, c.d` without parentheses |
+| `GRANT OWNERSHIP ON STREAMLIT` unsupported | Streamlit ownership can't move | Create each copy while using its owning role |
+| `CREATE OR REPLACE MASKING POLICY` fails when attached; masking unsupported on Standard | Edition | Secure views |
+| Agent tables missing from the text answer | Tables arrive as a separate `table` content item | App renders `result_set` as a dataframe |
+| Browser OAuth expires about hourly | Token lifetime | Key-pair auth for scripts |
 
 ---
 
@@ -555,6 +633,12 @@ python3 scripts/check_rerun_stable.py # same rerun check, live on Snowflake
 | `tests/` | DuckDB harness, planted-typology test, real-data run | Pranav |
 | `scripts/deploy.py` | Uploads files + runs all SQL in order on Snowflake | Pranav |
 | `scripts/check_rerun_stable.py` | Live check: reruns never change alerts | Pranav |
+| `scripts/check_governance.py` | Live check: each role can do exactly what it should | Pranav |
+| `sql/60_semantic_view.sql` | Secure views + `AML_SEMANTIC_VIEW` | Pranav |
+| `sql/70_agent.sql` | Cortex Agent `AML_COPILOT` | Pranav |
+| `sql/80_governance.sql` | Roles, grants, ground-truth isolation, masking | Pranav |
+| `sql/90_streamlit.sql` | Deploys the app twice (officer, auditor) | Pranav |
+| `streamlit/` | `streamlit_app.py` + `environment.yml` (streamlit 1.39.0, pandas 2.3.3) | Pranav |
 | `docs/brief.txt` | Submission brief (≤1024 characters) | both |
 
 ### Corpus sources
@@ -582,12 +666,13 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ✅ | Cortex Search over policy + FinCEN docs (119 chunks) | Pranav |
 | ✅ | `$aml-detect` runs end to end in CoCo | Pranav |
 | ✅ | All three skills tested end to end on live alerts (section 9.4) | Pranav |
-| ⏳ | Semantic view + Cortex Analyst + Cortex Agent (natural-language questions) | Udith |
-| ⏳ | Masking policies + `AML_ANALYST` / `COMPLIANCE_OFFICER` / `AUDITOR` roles + append-only grants | Udith |
-| ⏳ | Streamlit command centre (the deployed link) | Pranav |
+| ✅ | Semantic view + Cortex Analyst + Cortex Agent, answers verified | Pranav |
+| ✅ | Roles, append-only grants, PII masking (secure views), 30 / 30 checks | Pranav |
+| ✅ | Streamlit command centre, officer + auditor copies, full flow tested through the UI | Pranav |
 | ⏳ | Second, differently seeded dataset for held-out evaluation | Udith |
 | ⏳ | FATF PDFs into `corpus/`; refresh `FATF_JURISDICTIONS` from the current list | Udith |
-| ⏳ | Deck on the hackathon template, demo video, repo made public | both |
+| ✅ | Repo public | Pranav |
+| ⏳ | Deck on the hackathon template, demo video | both |
 
 **Beyond the hackathon:** case-management integration, analyst feedback feeding threshold
 tuning, regulator-format export (FinCEN BSA XML), RBI / FIU-IND STR as a second jurisdiction,

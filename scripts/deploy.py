@@ -18,11 +18,14 @@ UPLOADS = {
     "01_load_raw.sql": [("data/*.csv", "RAW_DATA", True)],
     "10_alerts_and_cycle_proc.sql": [("detection/cycles.py", "CODE_STAGE", False)],
     "40_cortex_search.sql": [("corpus/*.pdf", "REG_DOCS", False)],
+    "90_streamlit.sql": [("streamlit/streamlit_app.py", "APP_STAGE", False),
+                         ("streamlit/environment.yml", "APP_STAGE", False)],
 }
 ORDER = ["01_load_raw.sql", "02_canonical.sql", "05_reference.sql", "10_alerts_and_cycle_proc.sql",
          "20_detection_rules.sql", "30_evaluate.sql", "50_findings.sql", "40_cortex_search.sql",
-         "60_semantic_view.sql", "70_agent.sql", "80_governance.sql"]
-STAGES = {"RAW_DATA": "", "CODE_STAGE": "",
+         "60_semantic_view.sql", "70_agent.sql", "80_governance.sql",
+         "90_streamlit.sql"]
+STAGES = {"RAW_DATA": "", "CODE_STAGE": "", "APP_STAGE": "",
           "REG_DOCS": "DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')"}
 
 
