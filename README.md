@@ -380,6 +380,9 @@ The generator plants known typologies and records them in `TXN_LABELS`. Only
 | ROUND_TRIP_CYCLE | 4 | 1.00 | all 4 cycles (12 accounts) |
 | GEO_RISK | 6 | 1.00 | 6 / 6 |
 
+Identical on Snowflake and locally: `SELECT * FROM RISK_COPILOT.AML.RULE_METRICS` returns
+exactly the table the DuckDB harness prints.
+
 The one miss is a layering account that passed on 47.9% of its inflow, under the 50% rule
 threshold. **Caveat:** velocity and pass-through thresholds were calibrated on this file, so
 these numbers are optimistic. Final numbers come from a second, differently seeded file that
@@ -389,9 +392,36 @@ no threshold was tuned against.
 
 ## 9. Running it
 
-### On Snowflake
+### 9.1 One-time setup
 
-One command uploads the files and runs every script in order into `RISK_COPILOT.AML`:
+1. **Snowflake account.** Sign up on the *Snowflake CoCo – For Developers* tab at
+   signup.snowflake.com (includes $40 CoCo + $360 platform credits). Our build uses an
+   AWS **ap-northeast-1 (Tokyo)** trial account.
+2. **CoCo CLI** (macOS / Linux):
+   ```
+   curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh     # installs ~/.local/bin/cortex
+   cortex --version                                                         # built on v1.1.87
+   ```
+3. **Connect.** Run `cortex` once; the wizard creates `~/.snowflake/connections.toml` with
+   browser (OAuth) login. Then make sure the connection has a warehouse and our schema:
+   ```toml
+   default_connection_name = "<your connection>"
+
+   [<your connection>]
+   account = "<account>.<region>.aws"
+   user = "<USER>"
+   authenticator = "OAUTH_AUTHORIZATION_CODE"
+   role = "ACCOUNTADMIN"
+   warehouse = "COMPUTE_WH"
+   database = "RISK_COPILOT"
+   schema = "AML"
+   ```
+   If the wizard shows an *Agent connection* and a *SQL connection*, both must be the same
+   account, or tables land in one account and AI usage bills another.
+
+### 9.2 Deploy to Snowflake
+
+One command uploads the files and runs every script, in order, into `RISK_COPILOT.AML`:
 
 ```
 pip install "snowflake-connector-python[secure-local-storage]"
@@ -402,15 +432,49 @@ python3 scripts/deploy.py --only 20_detection_rules.sql 30_evaluate.sql   # reru
 Order: `01_load_raw → 02_canonical → 05_reference → 10_alerts_and_cycle_proc → 20_detection_rules
 → 30_evaluate → 50_findings → 40_cortex_search`. Every script is idempotent.
 
-Then in CoCo:
+What it creates:
+
+| Kind | Objects |
+|---|---|
+| Stages | `RAW_DATA`, `CODE_STAGE`, `REG_DOCS` |
+| Raw tables | `RAW_CUSTOMERS`, `RAW_ACCOUNTS`, `RAW_TRANSACTIONS`, `RAW_LABELS`, `RAW_HIGH_RISK_COUNTRIES` |
+| Contract tables | `CUSTOMERS`, `ACCOUNTS`, `TRANSACTIONS`, `TXN_LABELS`, `FATF_JURISDICTIONS` |
+| Detection | `ALERTS`, procedure `DETECT_ROUND_TRIPS()`, views `ALERT_QUEUE`, `ALERT_TXNS` |
+| Evaluation | views `RULE_TYPOLOGY`, `RULE_METRICS` |
+| Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (119 chunks), Cortex Search service `AML_POLICY_SEARCH` |
+| Findings | `FINDINGS`, `SAR_REPORTS` |
+
+### 9.3 Use it from CoCo
 
 ```
-$aml-detect
-$aml-investigate <ALERT_ID>
-$sar-draft <ALERT_ID>
+cd risk-copilot
+cortex
+> $aml-detect
+> $aml-investigate <ALERT_ID>
+> $sar-draft <ALERT_ID>
 ```
 
-### Locally, no Snowflake needed
+CoCo asks for approval before any statement that changes data (`INSERT`, `DELETE`, …). In
+the demo that is deliberate: the analyst approves each write. `cortex exec` (non-interactive)
+auto-rejects those prompts, so it can only run the read-only parts.
+
+A real `$aml-detect` run on the deployed data (CoCo v1.1.87):
+
+| Rule | Severity | Open alerts |
+|---|---|---|
+| GEO_RISK | CRITICAL | 2 |
+| GEO_RISK | HIGH | 4 |
+| PASS_THROUGH | HIGH | 14 |
+| ROUND_TRIP_CYCLE | HIGH | 4 |
+| STRUCTURING | CRITICAL | 1 |
+| STRUCTURING | HIGH | 11 |
+| VELOCITY | HIGH | 1 |
+| VELOCITY | MEDIUM | 31 |
+
+Top of the queue: two wires to FATF black-list countries (North Korea, Myanmar; $360,934 and
+$289,639), then a structuring case raised to CRITICAL because the customer is high-risk (§7.2).
+
+### 9.4 Locally, no Snowflake needed
 
 The real SQL files run on DuckDB; only Snowflake-only functions are translated (`tests/duck.py`).
 
@@ -420,6 +484,17 @@ python3 detection/cycles.py           # cycle detector self-check
 python3 tests/test_rules_duckdb.py    # every rule on planted typologies, asserts case recall 1.0
 python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METRICS
 ```
+
+### 9.5 Gotchas we hit
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `DETECT_ROUND_TRIPS` crashed: `Decimal * float` | Snowflake `NUMBER` arrives in Python as `Decimal`; DuckDB gave floats | `find_cycles` casts amounts; the self-check now feeds it `Decimal`s |
+| CoCo cited money-loop alerts as §7.2 | Cycle alerts didn't record their clause, so the model guessed | Every rule writes `EVIDENCE:policy`; a query confirms 0 alerts without one |
+| Skill said "SQL tool is blocked" | Docs say `sql_execute`; CoCo 1.1.87's tool is `snowflake_sql_execute` | Skills declare `snowflake_sql_execute` (name taken from CoCo's bundled skills) |
+| Tables in one account, credits in another | Wizard set Agent and SQL connections to different accounts | One connection only, set as default |
+| `cortex sql …` hung | Not a real subcommand; it opened an interactive session | Use `scripts/deploy.py` or the skills |
+| `AT` alias failed | Reserved word in DuckDB and Snowflake (Time Travel) | Renamed alias |
 
 ---
 
@@ -432,7 +507,7 @@ python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METR
 | `sql/02_canonical.sql` | Raw → data contract | Pranav |
 | `sql/05_reference.sql` | FATF black/grey list + bank's own high-risk list | Pranav |
 | `sql/10_alerts_and_cycle_proc.sql` | `ALERTS` table + registers the cycle proc | Pranav |
-| `sql/20_detection_rules.sql` | Four SQL rules, `ALERT_QUEUE`, `ALERT_TXNS` | Pranav |
+| `sql/20_detection_rules.sql` | Four SQL rules (structuring, velocity, pass-through, geo-risk), `ALERT_QUEUE`, `ALERT_TXNS` | Pranav |
 | `sql/30_evaluate.sql` | `RULE_METRICS` against ground truth | Pranav |
 | `sql/40_cortex_search.sql` | Parse, chunk, index the corpus | Pranav |
 | `sql/50_findings.sql` | `FINDINGS`, `SAR_REPORTS` | Pranav |
@@ -456,17 +531,24 @@ python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METR
 
 ## 11. Status and roadmap
 
-| | Item |
-|---|---|
-| ✅ | Data load + canonical mapping, tested on the real generated data |
-| ✅ | Five detection rules + cycle search, tested locally with precision/recall |
-| ✅ | Evaluation against ground truth |
-| ✅ | Deployed to Snowflake (`RISK_COPILOT.AML`); Snowflake metrics match the local DuckDB run exactly |
-| ✅ | Cortex Search over policy + FinCEN docs; `$aml-detect` runs end to end in CoCo |
-| ⏳ | Semantic view + Cortex Analyst + Cortex Agent (natural-language questions over the data) |
-| ⏳ | Masking policies + roles |
-| ⏳ | Streamlit command centre |
-| ⏳ | Held-out evaluation on a second generated dataset |
+Submission closes **4 Oct 2026, 11:59 PM IST**. Required: public GitHub repo, deployed link,
+≤1024-character brief, 3–5 minute demo video **recorded in CoCo CLI** (input → processing →
+output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon template.
+
+| | Item | Owner |
+|---|---|---|
+| ✅ | Data load + canonical mapping on the real generated data | Udith · Pranav |
+| ✅ | Five detection rules + cycle search, evaluated against ground truth | Pranav |
+| ✅ | Deployed to Snowflake (`RISK_COPILOT.AML`); metrics match the local run exactly | Pranav |
+| ✅ | Cortex Search over policy + FinCEN docs (119 chunks) | Pranav |
+| ✅ | `$aml-detect` runs end to end in CoCo | Pranav |
+| ⏳ | `$aml-investigate` and `$sar-draft` tested on live alerts | Pranav |
+| ⏳ | Semantic view + Cortex Analyst + Cortex Agent (natural-language questions) | Udith |
+| ⏳ | Masking policies + `AML_ANALYST` / `COMPLIANCE_OFFICER` / `AUDITOR` roles + append-only grants | Udith |
+| ⏳ | Streamlit command centre (the deployed link) | Pranav |
+| ⏳ | Second, differently seeded dataset for held-out evaluation | Udith |
+| ⏳ | FATF PDFs into `corpus/`; refresh `FATF_JURISDICTIONS` from the current list | Udith |
+| ⏳ | Deck on the hackathon template, demo video, repo made public | both |
 
 **Beyond the hackathon:** case-management integration, analyst feedback feeding threshold
 tuning, regulator-format export (FinCEN BSA XML), RBI / FIU-IND STR as a second jurisdiction,
