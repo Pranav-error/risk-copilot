@@ -9,8 +9,10 @@ CREATE TABLE IF NOT EXISTS ALERTS (
     SEVERITY    STRING  NOT NULL,       -- CRITICAL / HIGH / MEDIUM / LOW
     EVIDENCE    VARIANT,                -- rule-specific detail (path, totals, thresholds)
     STATUS      STRING  DEFAULT 'OPEN', -- OPEN / ESCALATED / DISMISSED
+    ALERT_KEY   STRING,                 -- MD5(rule | sorted txn ids): same pattern = same alert
     CREATED_AT  TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
+ALTER TABLE ALERTS ADD COLUMN IF NOT EXISTS ALERT_KEY STRING;
 
 -- Upload the code first, from the repo root:
 --   PUT file://detection/cycles.py @CODE_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;

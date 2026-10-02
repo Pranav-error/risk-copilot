@@ -12,6 +12,7 @@ Runs two ways:
   - locally:   python detection/cycles.py   (self-check on a toy graph)
   - Snowflake: registered as a Snowpark stored procedure (sql/10_cycle_proc.sql)
 """
+import hashlib
 import json
 from collections import defaultdict
 from datetime import timedelta
@@ -82,8 +83,14 @@ def to_alert(cycle):
     }
 
 
+def alert_key(rule, txn_ids):
+    """Same as SQL MD5(RULE || '|' || ARRAY_TO_STRING(ARRAY_SORT(TXN_IDS), ','))."""
+    return hashlib.md5(f"{rule}|{','.join(sorted(txn_ids))}".encode()).hexdigest()
+
+
 def run(session):
-    """Snowpark stored-procedure handler. Rewrites this rule's rows in ALERTS."""
+    """Snowpark stored-procedure handler. Adds cycles not already in ALERTS; never renumbers
+    or resets an existing alert, so analyst decisions stay attached."""
     rows = session.sql(
         "SELECT TXN_ID, FROM_ACCOUNT_ID, TO_ACCOUNT_ID, AMOUNT, TXN_TS "
         "FROM TRANSACTIONS WHERE FROM_ACCOUNT_ID IS NOT NULL AND TO_ACCOUNT_ID IS NOT NULL "
@@ -91,15 +98,21 @@ def run(session):
         params=[MIN_AMOUNT],
     ).collect()
     cycles = find_cycles(tuple(r) for r in rows)
-    session.sql("DELETE FROM ALERTS WHERE RULE = 'ROUND_TRIP_CYCLE'").collect()
+    existing = {r[0] for r in session.sql(
+        "SELECT ALERT_KEY FROM ALERTS WHERE ALERT_KEY IS NOT NULL").collect()}
+    added = 0
     for a in map(to_alert, cycles):
+        key = alert_key(a["RULE"], a["TXN_IDS"])
+        if key in existing:
+            continue
         session.sql(
-            "INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE) "
-            "SELECT ?, ?, PARSE_JSON(?), ?, PARSE_JSON(?)",
+            "INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE, ALERT_KEY) "
+            "SELECT ?, ?, PARSE_JSON(?), ?, PARSE_JSON(?), ?",
             params=[a["RULE"], a["ACCOUNT_ID"], json.dumps(a["TXN_IDS"]),
-                    a["SEVERITY"], json.dumps(a["EVIDENCE"])],
+                    a["SEVERITY"], json.dumps(a["EVIDENCE"]), key],
         ).collect()
-    return f"{len(cycles)} round-trip cycles"
+        added += 1
+    return f"{len(cycles)} round-trip cycles, {added} new"
 
 
 if __name__ == "__main__":

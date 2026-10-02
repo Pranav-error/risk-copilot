@@ -1,11 +1,18 @@
--- Deterministic detection rules. Each one is idempotent: it deletes its own rows
--- from ALERTS and re-inserts. Clause numbers refer to corpus/internal_aml_policy.md.
+-- Deterministic detection rules. Clause numbers refer to corpus/internal_aml_policy.md.
 -- Round-trip / layering cycles run separately: CALL DETECT_ROUND_TRIPS();
+--
+-- Rules write candidates; the last step adds only alerts not already in ALERTS (keyed on rule +
+-- the exact set of transactions). Rerunning never renumbers an alert or resets its STATUS, so
+-- FINDINGS and SAR_REPORTS keep pointing at the alert the analyst actually reviewed.
+-- ponytail: a stale OPEN alert whose pattern no longer fires is kept, not removed; add a
+-- RESOLVED_BY_RERUN status if the data starts changing under existing alerts.
+
+CREATE OR REPLACE TRANSIENT TABLE ALERT_CANDIDATES (
+    RULE STRING, ACCOUNT_ID STRING, TXN_IDS ARRAY, SEVERITY STRING, EVIDENCE VARIANT);
 
 -- §3.3 STRUCTURING: >=3 cash deposits of $8,000-$9,999.99 within 7 days, total > $10,000.
 -- A cash deposit is CHANNEL = 'CASH' into the account (TO_ACCOUNT_ID).
-DELETE FROM ALERTS WHERE RULE = 'STRUCTURING';
-INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
+INSERT INTO ALERT_CANDIDATES (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
 WITH dep AS (
     SELECT TXN_ID, TO_ACCOUNT_ID AS ACCOUNT_ID, AMOUNT, TXN_TS
     FROM TRANSACTIONS
@@ -30,8 +37,7 @@ FROM windows;
 -- §4.1 VELOCITY: 4+ transactions within any 24 hours whose value is > 5x the account's
 -- trailing 90-day daily average, minimum $10,000. Rolling window, so a burst that crosses
 -- midnight isn't split in two.
-DELETE FROM ALERTS WHERE RULE = 'VELOCITY';
-INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
+INSERT INTO ALERT_CANDIDATES (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
 WITH legs AS (   -- every transaction counts for both of its internal accounts
     SELECT TXN_ID, FROM_ACCOUNT_ID AS ACCOUNT_ID, AMOUNT, TXN_TS FROM TRANSACTIONS WHERE FROM_ACCOUNT_ID IS NOT NULL
     UNION ALL
@@ -67,8 +73,7 @@ GROUP BY s.ACCOUNT_ID;
 
 -- §5.5 PASS_THROUGH (rapid layering): an inflow of $50,000+ followed within 72 hours by 2+
 -- outflows totalling at least 50% of it. Money that only passes through the account.
-DELETE FROM ALERTS WHERE RULE = 'PASS_THROUGH';
-INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
+INSERT INTO ALERT_CANDIDATES (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
 WITH inflow AS (
     SELECT TXN_ID, TO_ACCOUNT_ID AS ACCOUNT_ID, AMOUNT, TXN_TS
     FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL AND AMOUNT >= 50000
@@ -91,8 +96,7 @@ FROM passed;
 
 -- §6.2 GEO_RISK: any wire with a FATF black-list country (CRITICAL);
 -- grey-list wires totalling > $50,000 within 30 days (HIGH).
-DELETE FROM ALERTS WHERE RULE = 'GEO_RISK';
-INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
+INSERT INTO ALERT_CANDIDATES (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE)
 WITH wires AS (
     SELECT t.TXN_ID, COALESCE(t.FROM_ACCOUNT_ID, t.TO_ACCOUNT_ID) AS ACCOUNT_ID,
            t.AMOUNT, t.TXN_TS, t.COUNTERPARTY_COUNTRY, f.LIST
@@ -123,13 +127,25 @@ SELECT 'GEO_RISK', ACCOUNT_ID, TXN_IDS, 'HIGH',
                         'window_start', WINDOW_START, 'threshold', 50000, 'policy', '6.2')
 FROM grey;
 
+INSERT INTO ALERTS (RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE, ALERT_KEY)
+SELECT RULE, ACCOUNT_ID, TXN_IDS, SEVERITY, EVIDENCE,
+       MD5(RULE || '|' || ARRAY_TO_STRING(ARRAY_SORT(TXN_IDS), ','))
+FROM ALERT_CANDIDATES
+WHERE MD5(RULE || '|' || ARRAY_TO_STRING(ARRAY_SORT(TXN_IDS), ','))
+      NOT IN (SELECT ALERT_KEY FROM ALERTS WHERE ALERT_KEY IS NOT NULL);
+
 -- §7.2: HIGH-risk customers' alerts are raised one severity level. A view, not an UPDATE,
 -- so re-running the rules never escalates the same alert twice. The app reads this.
 CREATE OR REPLACE VIEW ALERT_QUEUE AS
 SELECT al.*, c.CUSTOMER_ID, c.RISK_RATING,
        CASE WHEN c.RISK_RATING = 'HIGH' THEN
             CASE al.SEVERITY WHEN 'LOW' THEN 'MEDIUM' WHEN 'MEDIUM' THEN 'HIGH' ELSE 'CRITICAL' END
-            ELSE al.SEVERITY END AS EFFECTIVE_SEVERITY
+            ELSE al.SEVERITY END AS EFFECTIVE_SEVERITY,
+       -- stated as data so an explanation reads the reason instead of inventing one
+       CASE WHEN c.RISK_RATING = 'HIGH' AND al.SEVERITY <> 'CRITICAL'
+            THEN 'Raised one level from ' || al.SEVERITY || ': customer risk rating is HIGH (policy 7.2)'
+            ELSE 'As raised by rule ' || al.RULE || ' (policy ' || al.EVIDENCE:policy::STRING || ')'
+            END AS SEVERITY_REASON
 FROM ALERTS al
 LEFT JOIN ACCOUNTS a  ON a.ACCOUNT_ID = al.ACCOUNT_ID
 LEFT JOIN CUSTOMERS c ON c.CUSTOMER_ID = a.CUSTOMER_ID;

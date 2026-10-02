@@ -50,8 +50,8 @@ the analyst's, and it is recorded with their name and reason (policy §9.1).
 
 Answer in this shape:
 
-- **What fired:** rule, severity (and why it was escalated, if `EFFECTIVE_SEVERITY` differs
-  from `SEVERITY`: high-risk customer, §7.2).
+- **What fired:** rule and `EFFECTIVE_SEVERITY`. Explain severity using `SEVERITY_REASON`
+  exactly as stored; never infer another reason.
 - **Evidence:** the transactions as a short table with `TXN_ID`, date, amount, channel, counterparty.
 - **Why it matches the rule:** compare the numbers to the policy threshold, citing the clause,
   e.g. *"4 cash deposits totalling $37,420 in 5 days, each under $10,000 (policy §3.3)"*.
@@ -60,6 +60,11 @@ Answer in this shape:
 
 Every factual claim must cite a `TXN_ID` or a policy/regulation source. If you can't cite it,
 don't say it.
+
+**Only call a clause breached when its threshold is actually met, and show the arithmetic.**
+If a clause is relevant but not met, say so: *"Inflows were 1.4× declared monthly income; §7.3
+applies at 3× for two consecutive months, so it is not met."* A clause that is merely
+related is context, never evidence.
 
 ## Record the decision (only when the user gives one)
 
