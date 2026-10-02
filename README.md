@@ -11,7 +11,7 @@ outputs from natural language questions."*
 | | |
 |---|---|
 | **What** | An AML copilot that takes an analyst from a fraud signal to a documented finding and a cited, machine-checked SAR, entirely inside Snowflake |
-| **Built with** | CoCo CLI (3 project skills), Snowpark, Cortex Search, Cortex Analyst + semantic view, Cortex Agent, `AI_COMPLETE` (claude-sonnet-4-5), Streamlit in Snowflake, RBAC + secure views |
+| **Built with** | CoCo CLI (3 project skills), Snowpark, Cortex Search (hybrid: keyword + vector + reranker), Cortex Analyst + semantic view, Cortex Agent, `AI_COMPLETE` (claude-sonnet-4-5), Streamlit in Snowflake, RBAC + secure views |
 | **Detection** | 5 deterministic rules mapped to numbered policy clauses; the LLM never decides what is fraud |
 | **Measured** | On seeded data: every planted scheme caught except one; precision 0.75–1.00 per rule |
 | **Audit-ready** | Append-only decisions by grant; every SAR's transaction citations machine-verified; auditors see PII masked, even inside AI answers |
@@ -245,6 +245,20 @@ flowchart LR
     CH --> CS["Cortex Search service<br/>AML_POLICY_SEARCH"]
     CS -->|"SEARCH_PREVIEW"| Q["Skills / Agent<br/>cite source + section"]
 ```
+
+**Retrieval is hybrid, and no data leaves Snowflake** (no external vector database). Every
+Cortex Search hit carries three scores, visible in `SEARCH_PREVIEW` output:
+
+| Score | Kind |
+|---|---|
+| `text_match` | Keyword (lexical) match |
+| `cosine_similarity` | Vector match, embedding model `snowflake-arctic-embed-m-v1.5` |
+| `reranker_score` | Semantic re-ranker that sets the final order |
+
+For *"cash deposits just below the reporting threshold"* the policy chunk ranks first although
+a FinCEN chunk has the higher keyword score: the re-ranker judged it more relevant. The copilot
+is hybrid across data types too: the agent sends each question to text-to-SQL over the semantic
+view (structured), to Cortex Search (documents), or both (section 4.4).
 
 Chunks keep their **source file and section header**. FinCEN chunks carry real section
 headers (*"Organizing Information in the SAR Narrative"*); the policy PDF is rendered from plain
