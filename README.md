@@ -113,14 +113,14 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 
 | Layer | Snowflake features | Status |
 |---|---|---|
-| 1 · Data | Stages, `COPY INTO`, tables, file formats | Built, tested locally |
-| 2 · Detection | SQL, Snowpark Python stored procedure | Built, tested locally |
-| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | Written, not yet run |
+| 1 · Data | Stages, `COPY INTO`, tables, file formats | ✅ Live on Snowflake |
+| 2 · Detection | SQL, Snowpark Python stored procedure | ✅ Live on Snowflake |
+| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (119 chunks, 3 documents) |
 | 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | Planned |
-| 4 · Finding | Tables + role grants (append-only) | Written, not yet run |
+| 4 · Finding | Tables + role grants (append-only) | ✅ Tables live; grants planned |
 | 5 · Governance | Masking policies, RBAC roles, tags | Planned |
 | App | Streamlit in Snowflake | Planned |
-| Interface | CoCo CLI project skills (`.cortex/skills/`) | Written, not yet run |
+| Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ `$aml-detect` verified in CoCo v1.1.87 |
 
 ---
 
@@ -391,19 +391,16 @@ no threshold was tuned against.
 
 ### On Snowflake
 
-```sql
--- from the repo root, in CoCo or SnowSQL
-PUT file://data/*.csv          @RAW_DATA   AUTO_COMPRESS=TRUE  OVERWRITE=TRUE;
-PUT file://detection/cycles.py @CODE_STAGE AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
-PUT file://corpus/*.pdf        @REG_DOCS   AUTO_COMPRESS=FALSE OVERWRITE=TRUE;
-```
-
-Then run, in order:
+One command uploads the files and runs every script in order into `RISK_COPILOT.AML`:
 
 ```
-01_load_raw → 02_canonical → 05_reference → 10_alerts_and_cycle_proc
-            → 20_detection_rules → 30_evaluate → 40_cortex_search → 50_findings
+pip install "snowflake-connector-python[secure-local-storage]"
+python3 scripts/deploy.py                      # default connection from ~/.snowflake/connections.toml
+python3 scripts/deploy.py --only 20_detection_rules.sql 30_evaluate.sql   # rerun part of it
 ```
+
+Order: `01_load_raw → 02_canonical → 05_reference → 10_alerts_and_cycle_proc → 20_detection_rules
+→ 30_evaluate → 50_findings → 40_cortex_search`. Every script is idempotent.
 
 Then in CoCo:
 
@@ -443,6 +440,7 @@ python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METR
 | `.cortex/skills/` | `aml-detect`, `aml-investigate`, `sar-draft` | Pranav |
 | `corpus/` | Policy + FinCEN/FATF documents for Cortex Search | Pranav |
 | `tests/` | DuckDB harness, planted-typology test, real-data run | Pranav |
+| `scripts/deploy.py` | Uploads files + runs all SQL in order on Snowflake | Pranav |
 | `docs/brief.txt` | Submission brief (≤1024 characters) | both |
 
 ### Corpus sources
@@ -463,7 +461,8 @@ python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METR
 | ✅ | Data load + canonical mapping, tested on the real generated data |
 | ✅ | Five detection rules + cycle search, tested locally with precision/recall |
 | ✅ | Evaluation against ground truth |
-| 📝 | Cortex Search, findings tables, CoCo skills: written, awaiting the Snowflake account |
+| ✅ | Deployed to Snowflake (`RISK_COPILOT.AML`); Snowflake metrics match the local DuckDB run exactly |
+| ✅ | Cortex Search over policy + FinCEN docs; `$aml-detect` runs end to end in CoCo |
 | ⏳ | Semantic view + Cortex Analyst + Cortex Agent (natural-language questions over the data) |
 | ⏳ | Masking policies + roles |
 | ⏳ | Streamlit command centre |

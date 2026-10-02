@@ -1,11 +1,14 @@
 ---
 name: aml-detect
-description: Run the deterministic AML detection rules (structuring, velocity, geo-risk, round-trip cycles), then summarise the open alert queue and each rule's precision/recall against ground truth. Use when the user asks to run detection, refresh alerts, or how well the rules perform.
+description: Run the deterministic AML detection rules (structuring, velocity, pass-through, geo-risk, round-trip cycles), then summarise the open alert queue and each rule's precision/recall against ground truth. Use when the user asks to run detection, refresh alerts, or how well the rules perform.
 tools:
-- sql_execute
+- snowflake_sql_execute
+- Read
 ---
 
 # AML detection run
+
+All objects live in `RISK_COPILOT.AML`: start with `USE SCHEMA RISK_COPILOT.AML;`.
 
 Detection is deterministic. You run the rules and report what they found. You never decide
 on your own that activity is suspicious, and you never add or remove alerts by judgement.

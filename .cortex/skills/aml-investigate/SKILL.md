@@ -2,10 +2,12 @@
 name: aml-investigate
 description: Investigate one AML alert - gather the transactions, customer profile, linked alerts and the policy clauses it breaches, and explain it with citations. Records the analyst's Escalate/Dismiss decision. Use when the user asks why an alert fired, to investigate an alert or account, or to escalate/dismiss one.
 tools:
-- sql_execute
+- snowflake_sql_execute
 ---
 
 # Investigate an alert
+
+All objects live in `RISK_COPILOT.AML`: start with `USE SCHEMA RISK_COPILOT.AML;`.
 
 Input: an `ALERT_ID` (ask for one if not given; suggest the top open alert).
 
