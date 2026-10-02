@@ -63,3 +63,21 @@ def detect_and_evaluate(db):
     for r in metrics:
         print(" | ".join(str(v) for v in r))
     return metrics
+
+
+def check_rerun_stable(db):
+    """Escalate an alert, shuffle row order, rerun: ids, keys and statuses must not change,
+    and no SQL rule may alert the same account twice."""
+    snap = "SELECT ALERT_ID, ALERT_KEY, STATUS FROM ALERTS ORDER BY ALERT_ID"
+    db.execute("UPDATE ALERTS SET STATUS = 'ESCALATED' WHERE ALERT_ID = (SELECT MIN(ALERT_ID) FROM ALERTS)")
+    before = db.execute(snap).fetchall()
+    for _ in range(3):  # several shuffles: a tie only shows when the scan order happens to flip it
+        db.execute("CREATE OR REPLACE TABLE T2 AS SELECT * FROM TRANSACTIONS ORDER BY random()")
+        db.execute("DROP TABLE TRANSACTIONS")
+        db.execute("ALTER TABLE T2 RENAME TO TRANSACTIONS")
+        run_detection(db)
+    assert db.execute(snap).fetchall() == before, "rerun changed alert ids, keys or statuses"
+    dupes = db.execute("""SELECT RULE, ACCOUNT_ID FROM ALERTS WHERE RULE <> 'ROUND_TRIP_CYCLE'
+                          GROUP BY 1, 2 HAVING COUNT(*) > 1""").fetchall()
+    assert not dupes, f"same pattern alerted twice: {dupes}"
+    db.execute("UPDATE ALERTS SET STATUS = 'OPEN'")
