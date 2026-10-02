@@ -51,7 +51,10 @@ in someone's head or a spreadsheet.
    role can insert into but never update or delete.
 4. **Measured, not claimed.** Every rule is scored for precision and recall against hidden
    ground-truth labels that the rules themselves never read.
-5. **Everything stays in Snowflake.** Data, detection, retrieval, AI, governance and the app
+5. **Anything the AI explains is stored as data first.** Severity reasons, policy clauses and
+   evidence numbers are columns, not inferences. Every time a fact was left implicit in testing,
+   the model filled the gap with a plausible wrong answer.
+6. **Everything stays in Snowflake.** Data, detection, retrieval, AI, governance and the app
    run in one account. Nothing leaves it.
 
 ---
@@ -180,10 +183,14 @@ flowchart LR
 | `ROUND_TRIP_CYCLE` | §5.2 | Money leaves and returns through 2–4 time-ordered hops within 7 days, each hop ≥80% of the last | MEDIUM (2 hops) / HIGH (3+) |
 
 Properties every rule shares:
-- **Idempotent:** each rule deletes its own rows and re-inserts, so the whole pipeline can rerun.
+- **Stable on rerun:** rules write candidates; only alerts with a new key
+  (`MD5(rule | sorted txn ids)`) are inserted. Rerunning never renumbers an alert or resets its
+  status, so `FINDINGS` and `SAR_REPORTS` always point at the alert the analyst reviewed.
+- **Deterministic:** every "keep the best window" breaks ties by earliest time, then txn id.
 - **Explainable:** `EVIDENCE` stores the numbers that fired it (totals, multiples, window, policy clause).
 - **Traceable:** `TXN_IDS` stores the exact transactions, so every alert links to raw evidence.
-- **Severity bump is a view, not an update:** reruns never escalate the same alert twice.
+- **Severity bump is a view, not an update:** reruns never escalate the same alert twice, and
+  `ALERT_QUEUE.SEVERITY_REASON` states why in words the AI repeats verbatim.
 
 **Why the cycle rule is Python, not SQL.** Finding A→B→C→A where each transfer happens *after*
 the previous one is a graph search with time constraints. `detection/cycles.py` runs a bounded
@@ -261,7 +268,11 @@ Project skills live in `.cortex/skills/` and are called as `$skill-name`
 |---|---|---|---|
 | `$aml-detect` | — | Runs all rules + cycle proc; summarises queue; shows precision/recall on request | `ALERTS` |
 | `$aml-investigate` | `ALERT_ID` | Pulls txns, KYC, linked alerts, policy + regulation clauses; explains with citations; records the analyst's decision | `FINDINGS`, `ALERTS.STATUS` |
-| `$sar-draft` | escalated `ALERT_ID` | Refuses unless a human escalated it; drafts a FinCEN-structured narrative with a citation on every claim | `SAR_REPORTS` |
+| `$sar-draft` | escalated `ALERT_ID` | Refuses unless a human escalated it; drafts a FinCEN-structured narrative with a citation on every claim; no legal conclusions; runs the citation check | `SAR_REPORTS` |
+
+**SAR citation check.** `SAR_CITATION_CHECK` extracts every `TXN_…` ID from a narrative and
+verifies it exists and belongs to the case. Tested against a planted bad draft: it flagged a
+made-up ID and a real transaction from another customer, and passed the genuine one.
 
 ---
 
@@ -439,10 +450,10 @@ What it creates:
 | Stages | `RAW_DATA`, `CODE_STAGE`, `REG_DOCS` |
 | Raw tables | `RAW_CUSTOMERS`, `RAW_ACCOUNTS`, `RAW_TRANSACTIONS`, `RAW_LABELS`, `RAW_HIGH_RISK_COUNTRIES` |
 | Contract tables | `CUSTOMERS`, `ACCOUNTS`, `TRANSACTIONS`, `TXN_LABELS`, `FATF_JURISDICTIONS` |
-| Detection | `ALERTS`, procedure `DETECT_ROUND_TRIPS()`, views `ALERT_QUEUE`, `ALERT_TXNS` |
+| Detection | `ALERTS`, `ALERT_CANDIDATES`, procedure `DETECT_ROUND_TRIPS()`, views `ALERT_QUEUE`, `ALERT_TXNS` |
 | Evaluation | views `RULE_TYPOLOGY`, `RULE_METRICS` |
 | Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (119 chunks), Cortex Search service `AML_POLICY_SEARCH` |
-| Findings | `FINDINGS`, `SAR_REPORTS` |
+| Findings | `FINDINGS`, `SAR_REPORTS`, view `SAR_CITATION_CHECK` |
 
 ### 9.3 Use it from CoCo
 
@@ -474,18 +485,45 @@ A real `$aml-detect` run on the deployed data (CoCo v1.1.87):
 Top of the queue: two wires to FATF black-list countries (North Korea, Myanmar; $360,934 and
 $289,639), then a structuring case raised to CRITICAL because the customer is high-risk (§7.2).
 
-### 9.4 Locally, no Snowflake needed
+### 9.4 End-to-end test on live Snowflake
+
+Every skill was run through CoCo against the deployed data, and every fact it stated was
+checked against the database by query.
+
+| # | Test | Result |
+|---|---|---|
+| T1 | `$sar-draft` on an alert no human reviewed | ✅ Refused; no SAR written |
+| T2 | `$aml-investigate` (structuring, CRITICAL) | ✅ All 4 txn IDs, amounts, times, $38,296.10 total, KYC, linked alert verified by query |
+| T3 | Escalate with analyst name + reason | ✅ One `FINDINGS` row (4 evidence txns, §3.3 + §7.2); alert `ESCALATED` |
+| T4 | `$sar-draft` after escalation | ✅ `DRAFT` saved; citation check 4 / 4; no legal conclusion; correct severity reason |
+| T5 | `$aml-investigate` on a money loop | ✅ Showed the 3-hop loop **and** linked the middle account's own pass-through alert |
+| T6 | Dismiss a false-positive velocity alert | ✅ `DISMISSED`, reason recorded |
+| T7 | Rerun all detection after a decision | ✅ 68 → 68 alerts, ids/keys/statuses identical (`scripts/check_rerun_stable.py`) |
+
+What testing caught and fixed along the way:
+
+| Found | Fix |
+|---|---|
+| Cited §7.3 (income) as breached at 1.43×; the clause needs 3× for two months | Skills must show the arithmetic and say "relevant but not met" |
+| SAR said the subject acted "in violation of 31 U.S.C. § 5324" | Skills forbid legal conclusions: "appears consistent with" |
+| SAR invented "UTC" for timestamps with no timezone | Skills forbid adding a timezone |
+| Said severity was raised "because of a linked alert" (it was the customer's risk rating) | `SEVERITY_REASON` column; skills repeat it verbatim |
+| **Rerunning detection renumbered every alert**, orphaning findings and SARs | Stable alert keys; regression test escalates, reruns, compares |
+| Identical-amount bursts tied; Snowflake picked a different window per run (68 → 72 alerts) | Total-order tie-breaks; test shuffles row order, fails 3/3 without the fix |
+
+### 9.5 Locally, no Snowflake needed
 
 The real SQL files run on DuckDB; only Snowflake-only functions are translated (`tests/duck.py`).
 
 ```
 pip install duckdb
 python3 detection/cycles.py           # cycle detector self-check
-python3 tests/test_rules_duckdb.py    # every rule on planted typologies, asserts case recall 1.0
-python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METRICS
+python3 tests/test_rules_duckdb.py    # every rule on planted typologies: case recall 1.0, rerun stable
+python3 tests/run_on_data.py          # full pipeline on data/: RULE_METRICS + rerun stable
+python3 scripts/check_rerun_stable.py # same rerun check, live on Snowflake
 ```
 
-### 9.5 Gotchas we hit
+### 9.6 Gotchas we hit
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -516,6 +554,7 @@ python3 tests/run_on_data.py          # full pipeline on data/, prints RULE_METR
 | `corpus/` | Policy + FinCEN/FATF documents for Cortex Search | Pranav |
 | `tests/` | DuckDB harness, planted-typology test, real-data run | Pranav |
 | `scripts/deploy.py` | Uploads files + runs all SQL in order on Snowflake | Pranav |
+| `scripts/check_rerun_stable.py` | Live check: reruns never change alerts | Pranav |
 | `docs/brief.txt` | Submission brief (≤1024 characters) | both |
 
 ### Corpus sources
@@ -542,7 +581,7 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ✅ | Deployed to Snowflake (`RISK_COPILOT.AML`); metrics match the local run exactly | Pranav |
 | ✅ | Cortex Search over policy + FinCEN docs (119 chunks) | Pranav |
 | ✅ | `$aml-detect` runs end to end in CoCo | Pranav |
-| ⏳ | `$aml-investigate` and `$sar-draft` tested on live alerts | Pranav |
+| ✅ | All three skills tested end to end on live alerts (section 9.4) | Pranav |
 | ⏳ | Semantic view + Cortex Analyst + Cortex Agent (natural-language questions) | Udith |
 | ⏳ | Masking policies + `AML_ANALYST` / `COMPLIANCE_OFFICER` / `AUDITOR` roles + append-only grants | Udith |
 | ⏳ | Streamlit command centre (the deployed link) | Pranav |
