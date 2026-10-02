@@ -70,7 +70,7 @@ for _ in range(10):  # geo: grey-list wires adding up past $50k in a month
     a, ts = next(bad), T0 + timedelta(days=random.randint(0, 140))
     for _ in range(3):
         ts += timedelta(days=random.randint(1, 8))
-        tx(a, None, random.uniform(18000, 30000), "WIRE", ts, random.choice(["VN", "NG", "HT"]), label="GEO_RISK")
+        tx(a, None, random.uniform(18000, 30000), "WIRE", ts, random.choice(["VN", "KE", "HT"]), label="GEO_RISK")  # FATF grey list, Jun 2026
 for _ in range(20):  # round trip / layering cycles
     hops = random.choice([2, 3, 4])
     path = [next(bad) for _ in range(hops)]

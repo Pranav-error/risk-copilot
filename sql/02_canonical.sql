@@ -1,7 +1,7 @@
 -- Map the raw generated data onto the data contract (README) that every rule,
 -- the semantic view and the app depend on. Raw stays untouched; rerun freely.
 
-CREATE OR REPLACE TABLE CUSTOMERS AS
+CREATE OR REPLACE TABLE CUSTOMERS COPY GRANTS AS
 SELECT customer_id                AS CUSTOMER_ID,
        full_name                  AS NAME,
        UPPER(customer_type)       AS CUSTOMER_TYPE,
@@ -13,7 +13,7 @@ SELECT customer_id                AS CUSTOMER_ID,
        onboarding_date            AS ONBOARDED_AT
 FROM RAW_CUSTOMERS;
 
-CREATE OR REPLACE TABLE ACCOUNTS AS
+CREATE OR REPLACE TABLE ACCOUNTS COPY GRANTS AS
 SELECT account_id AS ACCOUNT_ID, customer_id AS CUSTOMER_ID, UPPER(account_type) AS ACCOUNT_TYPE,
        open_date AS OPENED_AT, UPPER(status) AS STATUS
 FROM RAW_ACCOUNTS;
@@ -23,7 +23,7 @@ FROM RAW_ACCOUNTS;
 -- Amounts: the generator writes INR, but the typologies are sized for the US BSA
 -- thresholds the policy uses (structuring at 9,000-9,900 under a 10,000 CTR line), so the
 -- canonical table reads them as USD. Change here if the generator switches to RBI thresholds.
-CREATE OR REPLACE TABLE TRANSACTIONS AS
+CREATE OR REPLACE TABLE TRANSACTIONS COPY GRANTS AS
 WITH r AS (
     SELECT t.*,
            t.txn_type = 'deposit' OR LOWER(t.description) LIKE 'incoming%' AS IS_INBOUND,
@@ -51,7 +51,7 @@ SELECT txn_id AS TXN_ID,
        description                                                     AS DESCRIPTION
 FROM r;
 
-CREATE OR REPLACE TABLE TXN_LABELS AS
+CREATE OR REPLACE TABLE TXN_LABELS COPY GRANTS AS
 SELECT txn_id AS TXN_ID,
        account_id AS ACCOUNT_ID,
        CASE typology_type

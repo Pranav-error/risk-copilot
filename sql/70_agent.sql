@@ -1,5 +1,7 @@
 -- Cortex Agent: one natural-language entry point over the data (Cortex Analyst on the
 -- semantic view) and the policy / FinCEN corpus (Cortex Search). Used by the Streamlit app.
+-- No COPY GRANTS here (agents don't accept it): 80_governance.sql re-grants USAGE, so the two
+-- must run in that order — as must 40 (search service) and 80.
 
 CREATE OR REPLACE AGENT AML_COPILOT
   COMMENT = 'AML risk copilot: answers over transactions, alerts and decisions, citing policy'

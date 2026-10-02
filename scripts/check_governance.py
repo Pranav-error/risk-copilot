@@ -52,6 +52,13 @@ for role in ("AML_ANALYST", "COMPLIANCE_OFFICER", "AUDITOR"):
     expect(role, "read ground truth (TXN_LABELS)", "SELECT COUNT(*) FROM TXN_LABELS", False)
     expect(role, "ask the agent's semantic view",
            "SELECT * FROM SEMANTIC_VIEW(AML_SEMANTIC_VIEW METRICS alerts.alert_count)", True)
+    expect(role, "search the policy (Cortex Search)",
+           "SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW('RISK_COPILOT.AML.AML_POLICY_SEARCH', "
+           "'{\"query\": \"structuring\", \"columns\": [\"SOURCE\"], \"limit\": 1}')", True)
+    expect(role, "ask the agent (Cortex Agent)",
+           "SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN('RISK_COPILOT.AML.AML_COPILOT', "
+           "'{\"messages\": [{\"role\": \"user\", \"content\": [{\"type\": \"text\", "
+           "\"text\": \"How many alerts are there?\"}]}]}')", True)
     expect(role, "record a decision (INSERT FINDINGS)",
            f"INSERT INTO FINDINGS (ALERT_ID, DECISION, ANALYST, REASON) "
            f"SELECT ({probe}), 'DISMISS', 'governance-check', 'probe'", works_cases)
