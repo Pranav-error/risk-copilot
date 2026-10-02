@@ -4,6 +4,8 @@
 -- Rules write candidates; the last step adds only alerts not already in ALERTS (keyed on rule +
 -- the exact set of transactions). Rerunning never renumbers an alert or resets its STATUS, so
 -- FINDINGS and SAR_REPORTS keep pointing at the alert the analyst actually reviewed.
+-- Every "keep the best window" has a total order (score, then earliest, then txn id): with
+-- ties, Snowflake picks a different row each run and the same pattern gets a second alert.
 -- ponytail: a stale OPEN alert whose pattern no longer fires is kept, not removed; add a
 -- RESOLVED_BY_RERUN status if the data starts changing under existing alerts.
 
@@ -25,9 +27,9 @@ WITH dep AS (
     FROM dep a
     JOIN dep b ON b.ACCOUNT_ID = a.ACCOUNT_ID
               AND b.TXN_TS >= a.TXN_TS AND b.TXN_TS < a.TXN_TS + INTERVAL '7 days'
-    GROUP BY a.ACCOUNT_ID, a.TXN_TS
+    GROUP BY a.ACCOUNT_ID, a.TXN_TS, a.TXN_ID
     HAVING COUNT(*) >= 3 AND SUM(b.AMOUNT) > 10000
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY COUNT(*) DESC, SUM(b.AMOUNT) DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY COUNT(*) DESC, SUM(b.AMOUNT) DESC, a.TXN_TS, a.TXN_ID) = 1
 )
 SELECT 'STRUCTURING', ACCOUNT_ID, TXN_IDS, 'HIGH',
        OBJECT_CONSTRUCT('deposits', N, 'total', TOTAL, 'window_start', WINDOW_START,
@@ -51,14 +53,14 @@ WITH legs AS (   -- every transaction counts for both of its internal accounts
     GROUP BY a.ACCOUNT_ID, a.TXN_ID, a.TXN_TS
     HAVING COUNT(*) >= 4 AND SUM(b.AMOUNT) >= 10000
 ), scored AS (
-    SELECT w.ACCOUNT_ID, w.WINDOW_START, w.N, w.VALUE,
+    SELECT w.ACCOUNT_ID, w.ANCHOR, w.WINDOW_START, w.N, w.VALUE,
            COALESCE(SUM(p.AMOUNT), 0) / 90 AS AVG90
     FROM bursts w
     LEFT JOIN legs p ON p.ACCOUNT_ID = w.ACCOUNT_ID
                     AND p.TXN_TS >= w.WINDOW_START - INTERVAL '90 days' AND p.TXN_TS < w.WINDOW_START
-    GROUP BY w.ACCOUNT_ID, w.WINDOW_START, w.N, w.VALUE
+    GROUP BY w.ACCOUNT_ID, w.ANCHOR, w.WINDOW_START, w.N, w.VALUE
     HAVING w.VALUE > 5 * COALESCE(SUM(p.AMOUNT), 0) / 90
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY w.ACCOUNT_ID ORDER BY w.VALUE DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY w.ACCOUNT_ID ORDER BY w.VALUE DESC, w.WINDOW_START, w.ANCHOR) = 1
 )
 SELECT 'VELOCITY', s.ACCOUNT_ID, ARRAY_AGG(l.TXN_ID),
        CASE WHEN MAX(s.AVG90) = 0 THEN 'HIGH' ELSE 'MEDIUM' END,   -- §4.2: no prior activity
@@ -86,7 +88,7 @@ WITH inflow AS (
                        AND o.TXN_TS > i.TXN_TS AND o.TXN_TS <= i.TXN_TS + INTERVAL '72 hours'
     GROUP BY i.ACCOUNT_ID, i.TXN_ID, i.AMOUNT, i.TXN_TS
     HAVING COUNT(*) >= 2 AND SUM(o.AMOUNT) >= 0.5 * i.AMOUNT
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY i.ACCOUNT_ID ORDER BY i.AMOUNT DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY i.ACCOUNT_ID ORDER BY i.AMOUNT DESC, i.TXN_TS, i.TXN_ID) = 1
 )
 SELECT 'PASS_THROUGH', ACCOUNT_ID, ARRAY_PREPEND(OUT_TXNS, IN_TXN), 'HIGH',
        OBJECT_CONSTRUCT('inflow', IN_AMOUNT, 'outflow_total', OUT_TOTAL, 'outflows', N_OUT,
@@ -114,9 +116,9 @@ WITH wires AS (
     JOIN wires b ON b.ACCOUNT_ID = a.ACCOUNT_ID AND b.LIST = 'GREY'
                 AND b.TXN_TS >= a.TXN_TS AND b.TXN_TS < a.TXN_TS + INTERVAL '30 days'
     WHERE a.LIST = 'GREY'
-    GROUP BY a.ACCOUNT_ID, a.TXN_TS
+    GROUP BY a.ACCOUNT_ID, a.TXN_TS, a.TXN_ID
     HAVING SUM(b.AMOUNT) > 50000
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY SUM(b.AMOUNT) DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY SUM(b.AMOUNT) DESC, a.TXN_TS, a.TXN_ID) = 1
 )
 SELECT 'GEO_RISK', ACCOUNT_ID, TXN_IDS, 'CRITICAL',
        OBJECT_CONSTRUCT('list', 'FATF black list', 'countries', COUNTRIES, 'total', TOTAL, 'policy', '6.2')

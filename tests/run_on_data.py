@@ -3,7 +3,7 @@ raw CSVs -> 02_canonical -> 05_reference -> rules -> precision/recall.
 
     pip install duckdb && python3 tests/run_on_data.py
 """
-from duck import ROOT, connect, detect_and_evaluate, run_sql_file
+from duck import ROOT, check_rerun_stable, connect, detect_and_evaluate, run_sql_file
 
 db = connect()
 data = ROOT / "data"
@@ -23,3 +23,6 @@ print("\nmissed labelled txns by typology:")
 for r in db.execute("""SELECT l.TYPOLOGY, COUNT(*) FROM TXN_LABELS l
                        WHERE l.TXN_ID NOT IN (SELECT TXN_ID FROM ALERT_TXNS) GROUP BY 1""").fetchall():
     print(" ", r)
+
+check_rerun_stable(db)
+print("rerun stable: ok")

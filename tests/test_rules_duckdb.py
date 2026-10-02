@@ -6,7 +6,7 @@ tests/run_on_data.py measures the real generated data.
 import random
 from datetime import datetime, timedelta
 
-from duck import connect, detect_and_evaluate, run_detection, run_sql_file
+from duck import check_rerun_stable, connect, detect_and_evaluate, run_sql_file
 
 random.seed(7)
 T0 = datetime(2026, 1, 1)
@@ -93,12 +93,7 @@ for row in metrics:
     assert m["PRECISION"] >= 0.95, m
 
 # Reruns must not renumber alerts or reset analyst decisions, or FINDINGS/SARs lose their alert.
-snap = "SELECT ALERT_ID, ALERT_KEY, STATUS FROM ALERTS ORDER BY ALERT_ID"
-db.execute("UPDATE ALERTS SET STATUS = 'ESCALATED' WHERE ALERT_ID = (SELECT MIN(ALERT_ID) FROM ALERTS)")
-before = db.execute(snap).fetchall()
-run_detection(db)
-assert db.execute(snap).fetchall() == before, "rerun changed alert ids, keys or statuses"
-assert db.execute("SELECT COUNT(DISTINCT ALERT_KEY) = COUNT(*) FROM ALERTS").fetchone()[0], "duplicate keys"
+check_rerun_stable(db)
 # python key (cycles proc) == SQL key formula (rules), or a cycle could be inserted twice
 mismatch = db.execute("""SELECT COUNT(*) FROM ALERTS WHERE ALERT_KEY <>
     md5(RULE || '|' || array_to_string(list_sort(TXN_IDS), ','))""").fetchone()[0]
