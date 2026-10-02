@@ -3,14 +3,14 @@
 
 -- Secure views that mask PII for any role that doesn't work cases. Standard edition has no
 -- masking policies, so this is the masking; the semantic view reads customers through it.
-CREATE OR REPLACE SECURE VIEW CUSTOMER_PROFILE AS
+CREATE OR REPLACE SECURE VIEW CUSTOMER_PROFILE COPY GRANTS AS
 SELECT CUSTOMER_ID,
        CASE WHEN CURRENT_ROLE() IN ('ACCOUNTADMIN', 'SYSADMIN', 'AML_ANALYST', 'COMPLIANCE_OFFICER')
             THEN NAME ELSE '*** masked ***' END AS NAME,
        CUSTOMER_TYPE, RISK_RATING, PEP_FLAG, OCCUPATION, DECLARED_MONTHLY_INCOME, COUNTRY, ONBOARDED_AT
 FROM CUSTOMERS;
 
-CREATE OR REPLACE SECURE VIEW SAR_REVIEW AS
+CREATE OR REPLACE SECURE VIEW SAR_REVIEW COPY GRANTS AS
 SELECT SAR_ID, ALERT_ID, STATUS,
        CASE WHEN CURRENT_ROLE() IN ('ACCOUNTADMIN', 'SYSADMIN', 'AML_ANALYST', 'COMPLIANCE_OFFICER')
             THEN NARRATIVE ELSE '*** masked: narrative contains customer PII ***' END AS NARRATIVE,
@@ -18,7 +18,7 @@ SELECT SAR_ID, ALERT_ID, STATUS,
 FROM SAR_REPORTS;
 
 -- Account-centred view of money movement: one row per (transaction, internal account side).
-CREATE OR REPLACE VIEW ACCOUNT_ACTIVITY AS
+CREATE OR REPLACE VIEW ACCOUNT_ACTIVITY COPY GRANTS AS
 SELECT TXN_ID, FROM_ACCOUNT_ID AS ACCOUNT_ID, 'OUT' AS DIRECTION, AMOUNT, CHANNEL,
        COUNTERPARTY_COUNTRY, TXN_TS
 FROM TRANSACTIONS WHERE FROM_ACCOUNT_ID IS NOT NULL
@@ -27,7 +27,7 @@ SELECT TXN_ID, TO_ACCOUNT_ID, 'IN', AMOUNT, CHANNEL, COUNTERPARTY_COUNTRY, TXN_T
 FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL;
 
 -- Alerts with their reasons flattened into plain columns.
-CREATE OR REPLACE VIEW ALERT_FACTS AS
+CREATE OR REPLACE VIEW ALERT_FACTS COPY GRANTS AS
 SELECT ALERT_ID, RULE, ACCOUNT_ID, SEVERITY, EFFECTIVE_SEVERITY, SEVERITY_REASON, STATUS,
        EVIDENCE:policy::STRING AS POLICY_CLAUSE, ARRAY_SIZE(TXN_IDS) AS TXN_COUNT, CREATED_AT
 FROM ALERT_QUEUE;
@@ -104,7 +104,8 @@ CREATE OR REPLACE SEMANTIC VIEW AML_SEMANTIC_VIEW
     findings.decision_count AS COUNT(findings.decision)
   )
   COMMENT = 'AML monitoring: customers, accounts, money movement, alerts and analyst decisions'
-  AI_SQL_GENERATION 'All amounts are USD. "High-risk customer" means RISK_RATING = ''HIGH''. Cash deposit means CHANNEL = ''CASH'' and DIRECTION = ''IN''. Never select from TXN_LABELS: it is evaluation ground truth, not bank data.';
+  AI_SQL_GENERATION 'All amounts are USD. "High-risk customer" means RISK_RATING = ''HIGH''. Cash deposit means CHANNEL = ''CASH'' and DIRECTION = ''IN''. Never select from TXN_LABELS: it is evaluation ground truth, not bank data.'
+  COPY GRANTS;
 
 -- Smoke test
 -- (no parentheses around the lists: they parse as a multi-column tuple and fail)

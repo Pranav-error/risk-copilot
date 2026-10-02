@@ -8,13 +8,13 @@
 --   case_recall        = labelled accounts with at least one txn in a matching alert / labelled
 --                        accounts. The headline number: one alert per scheme is enough for an analyst
 
-CREATE OR REPLACE VIEW RULE_TYPOLOGY AS
+CREATE OR REPLACE VIEW RULE_TYPOLOGY COPY GRANTS AS
 SELECT * FROM VALUES
     ('STRUCTURING', 'STRUCTURING'), ('VELOCITY', 'VELOCITY'), ('GEO_RISK', 'GEO_RISK'),
     ('ROUND_TRIP_CYCLE', 'ROUND_TRIP'), ('PASS_THROUGH', 'LAYERING')
     AS v(RULE, TYPOLOGY);
 
-CREATE OR REPLACE VIEW RULE_METRICS AS
+CREATE OR REPLACE VIEW RULE_METRICS COPY GRANTS AS
 WITH hits AS (
     SELECT DISTINCT x.ALERT_ID, x.RULE, x.TXN_ID, l.ACCOUNT_ID, l.TYPOLOGY
     FROM ALERT_TXNS x

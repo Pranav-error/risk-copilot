@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS SAR_REPORTS (
 -- Machine check on every SAR: each transaction ID in the narrative must exist and belong to
 -- the case (the alert's own evidence, or a transaction touching the alerted account).
 -- The sar-draft skill runs this after saving; anything in UNVERIFIED blocks approval.
-CREATE OR REPLACE VIEW SAR_CITATION_CHECK AS
+CREATE OR REPLACE VIEW SAR_CITATION_CHECK COPY GRANTS AS
 WITH cited AS (
     SELECT s.SAR_ID, s.ALERT_ID, f.VALUE::STRING AS TXN_ID
     FROM SAR_REPORTS s,

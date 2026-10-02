@@ -11,16 +11,16 @@ CREATE OR REPLACE FILE FORMAT CSV_HEADER
 CREATE OR REPLACE TABLE RAW_CUSTOMERS (
     customer_id STRING, full_name STRING, customer_type STRING, country STRING,
     onboarding_date DATE, kyc_risk_rating STRING, pep_flag BOOLEAN,
-    business_sector STRING, expected_monthly_volume NUMBER(18,2));
+    business_sector STRING, expected_monthly_volume NUMBER(18,2)) COPY GRANTS;
 CREATE OR REPLACE TABLE RAW_ACCOUNTS (
     account_id STRING, customer_id STRING, account_type STRING, open_date DATE,
-    status STRING, currency STRING);
+    status STRING, currency STRING) COPY GRANTS;
 CREATE OR REPLACE TABLE RAW_TRANSACTIONS (
     txn_id STRING, account_id STRING, counterparty_account STRING, counterparty_country STRING,
     amount NUMBER(18,2), currency STRING, txn_type STRING, channel STRING,
-    txn_timestamp TIMESTAMP_NTZ, description STRING);
-CREATE OR REPLACE TABLE RAW_LABELS (txn_id STRING, account_id STRING, typology_type STRING);
-CREATE OR REPLACE TABLE RAW_HIGH_RISK_COUNTRIES (country_code STRING);
+    txn_timestamp TIMESTAMP_NTZ, description STRING) COPY GRANTS;
+CREATE OR REPLACE TABLE RAW_LABELS (txn_id STRING, account_id STRING, typology_type STRING) COPY GRANTS;
+CREATE OR REPLACE TABLE RAW_HIGH_RISK_COUNTRIES (country_code STRING) COPY GRANTS;
 
 COPY INTO RAW_CUSTOMERS    FROM @RAW_DATA/customers.csv.gz    FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
 COPY INTO RAW_ACCOUNTS     FROM @RAW_DATA/accounts.csv.gz     FILE_FORMAT = CSV_HEADER MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;

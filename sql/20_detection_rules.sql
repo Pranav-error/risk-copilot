@@ -10,7 +10,7 @@
 -- RESOLVED_BY_RERUN status if the data starts changing under existing alerts.
 
 CREATE OR REPLACE TRANSIENT TABLE ALERT_CANDIDATES (
-    RULE STRING, ACCOUNT_ID STRING, TXN_IDS ARRAY, SEVERITY STRING, EVIDENCE VARIANT);
+    RULE STRING, ACCOUNT_ID STRING, TXN_IDS ARRAY, SEVERITY STRING, EVIDENCE VARIANT) COPY GRANTS;
 
 -- §3.3 STRUCTURING: >=3 cash deposits of $8,000-$9,999.99 within 7 days, total > $10,000.
 -- A cash deposit is CHANNEL = 'CASH' into the account (TO_ACCOUNT_ID).
@@ -138,7 +138,7 @@ WHERE MD5(RULE || '|' || ARRAY_TO_STRING(ARRAY_SORT(TXN_IDS), ','))
 
 -- §7.2: HIGH-risk customers' alerts are raised one severity level. A view, not an UPDATE,
 -- so re-running the rules never escalates the same alert twice. The app reads this.
-CREATE OR REPLACE VIEW ALERT_QUEUE AS
+CREATE OR REPLACE VIEW ALERT_QUEUE COPY GRANTS AS
 SELECT al.*, c.CUSTOMER_ID, c.RISK_RATING,
        CASE WHEN c.RISK_RATING = 'HIGH' THEN
             CASE al.SEVERITY WHEN 'LOW' THEN 'MEDIUM' WHEN 'MEDIUM' THEN 'HIGH' ELSE 'CRITICAL' END
@@ -153,6 +153,6 @@ LEFT JOIN ACCOUNTS a  ON a.ACCOUNT_ID = al.ACCOUNT_ID
 LEFT JOIN CUSTOMERS c ON c.CUSTOMER_ID = a.CUSTOMER_ID;
 
 -- One row per (alert, transaction): used by the investigate skill and the evaluation.
-CREATE OR REPLACE VIEW ALERT_TXNS AS
+CREATE OR REPLACE VIEW ALERT_TXNS COPY GRANTS AS
 SELECT a.ALERT_ID, a.RULE, f.VALUE::STRING AS TXN_ID
 FROM ALERTS a, LATERAL FLATTEN(input => a.TXN_IDS) f;

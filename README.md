@@ -15,7 +15,7 @@ outputs from natural language questions."*
 | **Detection** | 5 deterministic rules mapped to numbered policy clauses; the LLM never decides what is fraud |
 | **Measured** | On seeded data: every planted scheme caught except one; precision 0.75–1.00 per rule |
 | **Audit-ready** | Append-only decisions by grant; every SAR's transaction citations machine-verified; auditors see PII masked, even inside AI answers |
-| **Tested** | 12 end-to-end tests on live Snowflake, 30 / 30 governance checks, rule tests that are proven to fail on the bugs they guard |
+| **Tested** | 14 end-to-end tests on live Snowflake, 36 / 36 governance checks, a full redeploy from scratch, rule tests that are proven to fail on the bugs they guard |
 
 ## Contents
 
@@ -157,7 +157,7 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 | 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (119 chunks, 3 documents) |
 | 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | ✅ Live; answers verified against hand-written SQL |
 | 4 · Finding | Tables + role grants (append-only) | ✅ Live; append-only enforced by grants |
-| 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 30/30 role checks pass |
+| 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 36/36 role checks pass |
 | App | Streamlit in Snowflake (two copies, owner's rights) | ✅ Live; full flow tested through the UI |
 | Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ All three skills verified end to end in CoCo v1.1.87 |
 
@@ -438,7 +438,10 @@ Views built on top: `ALERT_QUEUE` (alerts + `EFFECTIVE_SEVERITY` + `SEVERITY_REA
 
 ## 7. Governance
 
-Three roles (`sql/80_governance.sql`), checked live by `scripts/check_governance.py`: **30 / 30 pass**.
+Three roles (`sql/80_governance.sql`), checked live by `scripts/check_governance.py`: **36 / 36 pass**
+(12 checks per role: read alerts, names visible or masked in tables and through the AI layer,
+raw table access, ground truth, semantic view, Cortex Search, the agent, record / edit / delete a
+decision, approve a SAR).
 
 | Role | Customer names | Record a decision | Edit / delete a decision | Approve a SAR | Fraud labels |
 |---|---|---|---|---|---|
@@ -451,6 +454,7 @@ Three roles (`sql/80_governance.sql`), checked live by `scripts/check_governance
 | Append-only decisions | Analysts get `INSERT` on `FINDINGS` and `SAR_REPORTS`, never `UPDATE` / `DELETE`. `FINDINGS.DECIDED_BY_ROLE` records the role that made each decision |
 | PII masking | `CUSTOMER_PROFILE` and `SAR_REVIEW` secure views mask by `CURRENT_ROLE()`; the auditor has no grant on any table that holds a name; the semantic view reads customers through the secure view |
 | Ground-truth isolation | No role that works alerts can read `TXN_LABELS` / `RAW_LABELS`; `RULE_METRICS` still works for them because a view runs with its owner's rights |
+| Grants survive rebuilds | Every recreated table and view uses `COPY GRANTS`; the search service and agent (which don't accept it) are re-granted by `80_governance.sql`, which `deploy.py` always runs after them |
 | App enforcement | The Streamlit app is deployed twice, created by `COMPLIANCE_OFFICER` and by `AUDITOR`. An app runs with its owner's role, so what each copy can see and write is Snowflake's decision, not the app's |
 
 Two things we learned building it:
@@ -624,10 +628,12 @@ checked against the database by query.
 | T6 | Dismiss a false-positive velocity alert | ✅ `DISMISSED`, reason recorded |
 | T7 | Rerun all detection after a decision | ✅ 68 → 68 alerts, ids/keys/statuses identical (`scripts/check_rerun_stable.py`) |
 | T8 | Agent: data, policy and mixed questions | ✅ Answers verified against hand-written SQL (section 4.4) |
-| T9 | Governance, every role × every action | ✅ 30 / 30 (`scripts/check_governance.py`) |
+| T9 | Governance, every role × every action | ✅ 36 / 36 (`scripts/check_governance.py`) |
 | T10 | App renders as officer and as auditor | ✅ 0 exceptions; officer sees names + decision form; auditor sees masks, no form (`tests/test_app.py`) |
 | T11 | Full flow **through the UI**: escalate → AI SAR → approve | ✅ Finding recorded with role `COMPLIANCE_OFFICER`; 308-word SAR; citations 4 / 4; approved (`tests/test_app_flow.py`) |
 | T12 | Chat through the UI, as officer and as auditor | ✅ Same numbers; auditor's table masked (`tests/test_app_chat.py`) |
+| T13 | Full redeploy from scratch, then every check again | ✅ Metrics identical; 36 / 36 governance; UI flow and masked chat pass |
+| T14 | Rerun detection, then governance | ✅ No role loses access (`COPY GRANTS`) |
 
 What testing caught and fixed along the way:
 
@@ -684,16 +690,20 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 | `claude-4-sonnet`, `mistral-large2` errors | Retired models ("legacy state") | `claude-sonnet-4-5` |
 | App behaviour could differ in Snowflake | Unpinned `pandas` resolves to 3.x there; tests ran on 2.3.3 | Pinned `streamlit=1.39.0`, `pandas=2.3.3` in `environment.yml` |
 | Restoring a file with `git checkout` lost uncommitted work | It restores the committed version | Back up with `cp` before mutation tests |
+| After a detection rerun, every role lost access to the alert queue | `CREATE OR REPLACE VIEW` drops grants | `COPY GRANTS` on every recreated object; caught by running the governance check after the rerun check |
+| After a full redeploy the app crashed for every role | Recreating the Cortex Search service dropped its grant; the governance check never tested search | Governance re-grants it last; the check now covers search and the agent (proven to fail first) |
+| `COPY GRANTS` rejected on the semantic view / agent | Must be the last clause on a semantic view; agents don't accept it | Moved to the end; agent re-granted by `80_governance.sql` |
 
 ---
 
 ## 10. Demo walkthrough
 
-About 4 minutes, recorded in the CoCo CLI as the submission requires, then the app.
+About 4 minutes, recorded in the CoCo CLI as the submission requires, then the app. Start CoCo
+with `--no-mcp` so personal MCP servers don't print connection noise into the recording.
 
 | # | Do | Shows |
 |---|---|---|
-| 1 | `cortex` → `$aml-detect` | Deterministic rules run; 68 alerts; North Korea / Myanmar wires and a structuring case on top, each with its policy clause |
+| 1 | `cortex --no-mcp` → `$aml-detect` | Deterministic rules run; 68 alerts; North Korea / Myanmar wires and a structuring case on top, each with its policy clause |
 | 2 | `$aml-investigate 37` | 4 cash deposits of $9,391–$9,712 in one day = $38,296.10; §3.3 met; CRITICAL because the customer is high-risk (§7.2); §7.3 income clause *relevant but not met* (1.43× vs 3×) |
 | 3 | Escalate with a name and reason; approve the write in CoCo | A human decision, recorded append-only |
 | 4 | `$sar-draft 37` | FinCEN-structured SAR, every claim cited, "appears consistent with", citation check 4 / 4 |
@@ -710,7 +720,7 @@ About 4 minutes, recorded in the CoCo CLI as the submission requires, then the a
 |---|---|---|
 | Velocity and pass-through thresholds were tuned on the same generated file they're scored on | Reported precision / recall is optimistic | Score on a second, differently seeded file nobody tuned against |
 | Synthetic data from one generator | Patterns are cleaner than real transaction streams | Real (de-identified) data, or a second independent generator |
-| `FATF_JURISDICTIONS` is the June 2025 FATF list, entered from memory, plus the bank's own list | FATF updates three times a year | Load the current FATF statement into `corpus/` and refresh the table from it |
+| `FATF_JURISDICTIONS` is the June 2026 FATF list (3 black, 22 grey; cross-checked against two published lists on 2026-10-02) plus the bank's own list | FATF updates it three times a year; the next plenary is October 2026 | Refresh after each plenary; load the official FATF statement into `corpus/` |
 | Amounts read as USD although the generator labels them INR | The typologies are sized for US thresholds | Make currency and thresholds a jurisdiction setting (RBI / FIU-IND as a second profile) |
 | Append-only holds for working roles, not for account admins | `ACCOUNTADMIN` can still alter `FINDINGS` | Hash-chained findings or an external immutable log; restrict admin use |
 | Masking uses secure views (Standard edition) | Anyone with a direct grant on the base tables bypasses it | Enterprise tag-based masking policies |
@@ -730,7 +740,7 @@ About 4 minutes, recorded in the CoCo CLI as the submission requires, then the a
 | `corpus/` | Policy (`internal_aml_policy.md` / `.pdf`) + FinCEN PDFs for Cortex Search | Pranav |
 | `sql/01_load_raw.sql` | Stages + `COPY INTO` raw tables | Pranav |
 | `sql/02_canonical.sql` | Raw → data contract | Pranav |
-| `sql/05_reference.sql` | FATF black / grey list + the bank's own high-risk list | Pranav |
+| `sql/05_reference.sql` | FATF black / grey list (June 2026) + the bank's own high-risk list | Pranav |
 | `sql/10_alerts_and_cycle_proc.sql` | `ALERTS` table + registers `DETECT_ROUND_TRIPS()` | Pranav |
 | `sql/20_detection_rules.sql` | Structuring, velocity, pass-through, geo-risk; `ALERT_QUEUE`, `ALERT_TXNS` | Pranav |
 | `sql/30_evaluate.sql` | `RULE_METRICS` against ground truth | Pranav |
@@ -748,7 +758,7 @@ About 4 minutes, recorded in the CoCo CLI as the submission requires, then the a
 | `streamlit/environment.yml` | Pinned app packages (streamlit 1.39.0, pandas 2.3.3) | Pranav |
 | `scripts/deploy.py` | Uploads files + runs every SQL script in order | Pranav |
 | `scripts/check_rerun_stable.py` | Live: reruns never add, renumber or reset alerts | Pranav |
-| `scripts/check_governance.py` | Live: each role can do exactly what it should (30 checks) | Pranav |
+| `scripts/check_governance.py` | Live: each role can do exactly what it should (36 checks) | Pranav |
 | `tests/duck.py` | Runs the repo's SQL on DuckDB; shared rerun-stability check | Pranav |
 | `tests/test_rules_duckdb.py` | Every rule on planted typologies | Pranav |
 | `tests/run_on_data.py` | Full pipeline on `data/` with metrics | Pranav |
@@ -783,11 +793,12 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ✅ | `$aml-detect` runs end to end in CoCo | Pranav |
 | ✅ | All three skills tested end to end on live alerts (section 9.5) | Pranav |
 | ✅ | Semantic view + Cortex Analyst + Cortex Agent, answers verified | Pranav |
-| ✅ | Roles, append-only grants, PII masking (secure views), 30 / 30 checks | Pranav |
+| ✅ | Roles, append-only grants, PII masking (secure views), 36 / 36 checks | Pranav |
 | ✅ | Streamlit command centre, officer + auditor copies, full flow tested through the UI | Pranav |
 | ⏳ | Second, differently seeded dataset for held-out evaluation | Udith |
-| ⏳ | FATF PDFs into `corpus/`; refresh `FATF_JURISDICTIONS` from the current list | Udith |
+| ⏳ | FATF PDFs into `corpus/` (download by hand from fatf-gafi.org) | Udith |
 | ✅ | Repo public | Pranav |
+| ✅ | FATF list refreshed to the June 2026 plenary | Pranav |
 | ⏳ | Deck on the hackathon template, demo video | both |
 
 **Thanks to:** FinCEN for the public SAR guidance in `corpus/`; the round-trip detector's idea

@@ -27,6 +27,7 @@ def connect():
 def run_sql_file(db, name):
     text = re.sub(r"--[^\n]*", "", (ROOT / "sql" / name).read_text())
     text = text.replace("OBJECT_CONSTRUCT(", "json_object(").replace("TRANSIENT TABLE", "TABLE")
+    text = text.replace(" COPY GRANTS", "")
     text = text.replace("ARRAY_SORT(", "list_sort(").replace("VARIANT)", "JSON)")
     text = re.sub(r"\bARRAY\b(?=\s*,)", "VARCHAR[]", text)
     text = re.sub(r"(\w+\.)?EVIDENCE:(\w+)::STRING", r"json_extract_string(\1EVIDENCE, '$.\2')", text)
