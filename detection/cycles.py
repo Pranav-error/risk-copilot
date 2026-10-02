@@ -29,6 +29,7 @@ def find_cycles(txns, max_hops=MAX_HOPS, window=WINDOW,
     out_edges = defaultdict(list)
     edges = []
     for t in txns:
+        t = (t[0], t[1], t[2], float(t[3]), t[4])  # Snowflake NUMBER arrives as Decimal
         if t[2] is None or t[1] == t[2] or t[3] < min_amount:
             continue
         out_edges[t[1]].append(t)
@@ -76,6 +77,7 @@ def to_alert(cycle):
             "amount_out": float(first[3]),
             "amount_back": float(last[3]),
             "hours_elapsed": round((last[4] - first[4]).total_seconds() / 3600, 1),
+            "policy": "5.2",
         },
     }
 
@@ -121,6 +123,10 @@ if __name__ == "__main__":
     ]
     got = sorted(sorted(t[0] for t in c) for c in find_cycles(txns))
     assert got == [["t1", "t2", "t3"], ["t4", "t5"]], got
+    from decimal import Decimal
+    as_snowflake = [(t[0], t[1], t[2], Decimal(str(t[3])), t[4]) for t in txns]
+    assert sorted(sorted(t[0] for t in c) for c in find_cycles(as_snowflake)) == got
     a = to_alert(find_cycles(txns[:3])[0])
     assert a["EVIDENCE"]["path"] == ["A", "B", "C", "A"] and a["SEVERITY"] == "HIGH", a
+    assert a["EVIDENCE"]["policy"] == "5.2", a  # every rule must name its clause, or the AI guesses
     print("ok", got)

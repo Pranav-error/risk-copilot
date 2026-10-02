@@ -2,10 +2,12 @@
 name: sar-draft
 description: Draft a Suspicious Activity Report (SAR) narrative for an escalated AML alert, following FinCEN's who/what/when/where/why guidance, with every statement citing transaction IDs or policy clauses. Saves it as a DRAFT for a compliance officer. Use when the user asks to draft, write or generate a SAR or regulatory report.
 tools:
-- sql_execute
+- snowflake_sql_execute
 ---
 
 # Draft a SAR
+
+All objects live in `RISK_COPILOT.AML`: start with `USE SCHEMA RISK_COPILOT.AML;`.
 
 Input: an `ALERT_ID` that has been **escalated**. Check first:
 ```sql
