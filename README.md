@@ -692,6 +692,7 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 | Restoring a file with `git checkout` lost uncommitted work | It restores the committed version | Back up with `cp` before mutation tests |
 | After a detection rerun, every role lost access to the alert queue | `CREATE OR REPLACE VIEW` drops grants | `COPY GRANTS` on every recreated object; caught by running the governance check after the rerun check |
 | After a full redeploy the app crashed for every role | Recreating the Cortex Search service dropped its grant; the governance check never tested search | Governance re-grants it last; the check now covers search and the agent (proven to fail first) |
+| App showed "pyproject.toml file does not exist" in Snowsight, though headless tests passed | New Streamlits default to the **container** runtime (wants `pyproject.toml`); the app targets the **warehouse** runtime (`environment.yml`). Local tests can't see the runtime | `RUNTIME_NAME = 'SYSTEM$WAREHOUSE_RUNTIME'` on both apps; caught only by opening the app in the browser |
 | `COPY GRANTS` rejected on the semantic view / agent | Must be the last clause on a semantic view; agents don't accept it | Moved to the end; agent re-granted by `80_governance.sql` |
 
 ---
@@ -749,7 +750,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | `sql/60_semantic_view.sql` | Secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` + `AML_SEMANTIC_VIEW` | Pranav |
 | `sql/70_agent.sql` | Cortex Agent `AML_COPILOT` | Pranav |
 | `sql/80_governance.sql` | Roles, grants, ground-truth isolation, masking | Pranav |
-| `sql/90_streamlit.sql` | Deploys the app twice (officer, auditor) | Pranav |
+| `sql/90_streamlit.sql` | Deploys the app twice (officer, auditor) on the warehouse runtime | Pranav |
 | `detection/cycles.py` | Round-trip / layering cycle search (Snowpark handler + self-check) | Pranav |
 | `.cortex/skills/aml-detect/SKILL.md` | CoCo skill: run rules, summarise queue, show metrics | Pranav |
 | `.cortex/skills/aml-investigate/SKILL.md` | CoCo skill: gather evidence, explain with citations, record the decision | Pranav |
