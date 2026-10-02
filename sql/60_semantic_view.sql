@@ -65,6 +65,9 @@ CREATE OR REPLACE SEMANTIC VIEW AML_SEMANTIC_VIEW
       COMMENT = 'STRUCTURING, VELOCITY, PASS_THROUGH, GEO_RISK or ROUND_TRIP_CYCLE',
     alerts.severity AS EFFECTIVE_SEVERITY WITH SYNONYMS = ('severity', 'priority')
       COMMENT = 'CRITICAL, HIGH, MEDIUM or LOW, after the high-risk-customer uplift',
+    alerts.base_severity AS SEVERITY COMMENT = 'Severity the rule itself assigned, before any uplift',
+    alerts.severity_reason AS SEVERITY_REASON WITH SYNONYMS = ('why this severity', 'severity explanation')
+      COMMENT = 'The only valid explanation of EFFECTIVE_SEVERITY; repeat it, never infer another',
     alerts.status AS STATUS COMMENT = 'OPEN, ESCALATED or DISMISSED',
     alerts.policy_clause AS POLICY_CLAUSE COMMENT = 'Clause of the internal AML policy the rule implements',
     findings.decision AS DECISION COMMENT = 'ESCALATE or DISMISS',
