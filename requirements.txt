@@ -1,0 +1,6 @@
+# Python 3.11 (Snowpark and Streamlit-in-Snowflake both target it)
+snowflake-connector-python[secure-local-storage]   # scripts/deploy.py, scripts/check_*.py
+duckdb                                             # tests/: run the real SQL locally
+streamlit==1.39.0                                  # same version as streamlit/environment.yml
+snowflake-snowpark-python[pandas]                  # the app, run locally or in tests/test_app*.py
+pandas==2.3.3                                      # same version as streamlit/environment.yml
