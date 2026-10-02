@@ -1,6 +1,22 @@
 -- Semantic view: business meaning for Cortex Analyst, so "how much cash did high-risk
 -- customers deposit in August?" resolves to governed SQL instead of guessed column names.
 
+-- Secure views that mask PII for any role that doesn't work cases. Standard edition has no
+-- masking policies, so this is the masking; the semantic view reads customers through it.
+CREATE OR REPLACE SECURE VIEW CUSTOMER_PROFILE AS
+SELECT CUSTOMER_ID,
+       CASE WHEN CURRENT_ROLE() IN ('ACCOUNTADMIN', 'SYSADMIN', 'AML_ANALYST', 'COMPLIANCE_OFFICER')
+            THEN NAME ELSE '*** masked ***' END AS NAME,
+       CUSTOMER_TYPE, RISK_RATING, PEP_FLAG, OCCUPATION, DECLARED_MONTHLY_INCOME, COUNTRY, ONBOARDED_AT
+FROM CUSTOMERS;
+
+CREATE OR REPLACE SECURE VIEW SAR_REVIEW AS
+SELECT SAR_ID, ALERT_ID, STATUS,
+       CASE WHEN CURRENT_ROLE() IN ('ACCOUNTADMIN', 'SYSADMIN', 'AML_ANALYST', 'COMPLIANCE_OFFICER')
+            THEN NARRATIVE ELSE '*** masked: narrative contains customer PII ***' END AS NARRATIVE,
+       CITED_TXN_IDS, CITED_SOURCES, DRAFTED_BY, CREATED_AT
+FROM SAR_REPORTS;
+
 -- Account-centred view of money movement: one row per (transaction, internal account side).
 CREATE OR REPLACE VIEW ACCOUNT_ACTIVITY AS
 SELECT TXN_ID, FROM_ACCOUNT_ID AS ACCOUNT_ID, 'OUT' AS DIRECTION, AMOUNT, CHANNEL,
@@ -18,7 +34,7 @@ FROM ALERT_QUEUE;
 
 CREATE OR REPLACE SEMANTIC VIEW AML_SEMANTIC_VIEW
   TABLES (
-    customers AS CUSTOMERS PRIMARY KEY (CUSTOMER_ID)
+    customers AS CUSTOMER_PROFILE PRIMARY KEY (CUSTOMER_ID)
       WITH SYNONYMS = ('clients', 'subjects', 'account holders')
       COMMENT = 'Bank customers with KYC profile',
     accounts AS ACCOUNTS PRIMARY KEY (ACCOUNT_ID)

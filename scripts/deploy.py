@@ -21,7 +21,7 @@ UPLOADS = {
 }
 ORDER = ["01_load_raw.sql", "02_canonical.sql", "05_reference.sql", "10_alerts_and_cycle_proc.sql",
          "20_detection_rules.sql", "30_evaluate.sql", "50_findings.sql", "40_cortex_search.sql",
-         "60_semantic_view.sql", "70_agent.sql"]
+         "60_semantic_view.sql", "70_agent.sql", "80_governance.sql"]
 STAGES = {"RAW_DATA": "", "CODE_STAGE": "",
           "REG_DOCS": "DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')"}
 
