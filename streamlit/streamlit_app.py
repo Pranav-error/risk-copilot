@@ -33,6 +33,12 @@ def q(sql, params=None):
     return session.sql(sql, params=params).to_pandas()
 
 
+def md(text):
+    """Make model / document text safe for st.markdown: "$75,815.11 and $54,553.74" would
+    otherwise render as a LaTeX formula, and markdown-source ** leaks from the policy PDF."""
+    return (text or "").replace("**", "").replace("$", "\\$")
+
+
 ROLE = q("SELECT CURRENT_ROLE() AS R")["R"][0]
 CAN_DECIDE = ROLE in ("AML_ANALYST", "COMPLIANCE_OFFICER", "ACCOUNTADMIN")
 CAN_APPROVE = ROLE in ("COMPLIANCE_OFFICER", "ACCOUNTADMIN")
@@ -87,7 +93,7 @@ def policy_text(clause):
     for h in hits:
         m = re.search(rf"{re.escape(clause)} (.+?)(?=\s\d+\.\d+ |$)", " ".join(h["CHUNK"].split()))
         if m:
-            return f"§{clause} {m.group(1)}"
+            return f"§{clause} {m.group(1).replace('**', '')}"
     return None
 
 
@@ -104,9 +110,10 @@ with tab_inv:
     c[1].info(a.SEVERITY_REASON)
     clause_text = policy_text(ev.get("policy"))
     if clause_text:
-        st.markdown(f"**Policy:** {clause_text}  \n*source: internal_aml_policy.pdf via Cortex Search*")
-    st.markdown("**Rule evidence**")
-    st.json({k: v for k, v in ev.items() if k != "policy"}, expanded=False)
+        st.markdown(f"**Policy:** {md(clause_text)}  \n*source: internal_aml_policy.pdf via Cortex Search*")
+    st.markdown("**Rule evidence** (the numbers that fired it)")
+    st.dataframe(pd.DataFrame([(k.replace("_", " "), str(v)) for k, v in ev.items() if k != "policy"],
+                              columns=["measure", "value"]), hide_index=True)
 
     st.markdown("**Transactions that fired the rule**")
     st.dataframe(q(f"""SELECT t.TXN_ID, t.TXN_TS, t.FROM_ACCOUNT_ID, t.TO_ACCOUNT_ID, t.AMOUNT,
@@ -119,7 +126,8 @@ with tab_inv:
         st.markdown("**Customer (KYC)**")
         st.dataframe(q(f"""SELECT p.* FROM {DB}.CUSTOMER_PROFILE p
                            JOIN {DB}.ACCOUNTS a ON a.CUSTOMER_ID = p.CUSTOMER_ID
-                           WHERE a.ACCOUNT_ID = ?""", [a.ACCOUNT_ID]).T.astype(str), use_container_width=True)
+                           WHERE a.ACCOUNT_ID = ?""", [a.ACCOUNT_ID]).T.astype(str).set_axis(["value"], axis=1),
+                     use_container_width=True)
     with right:
         st.markdown("**Linked alerts** (this account or its counterparties)")
         st.dataframe(q(f"""SELECT ALERT_ID, RULE, ACCOUNT_ID, EFFECTIVE_SEVERITY, STATUS FROM {DB}.ALERT_QUEUE
@@ -185,7 +193,7 @@ with tab_ask:
     st.session_state.setdefault("chat", [])
     for m in st.session_state.chat:
         with st.chat_message(m["role"]):
-            st.markdown(m["text"])
+            st.markdown(md(m["text"]))
             for t in m.get("tables", []):
                 st.dataframe(t, hide_index=True)
             for s in m.get("sqls", []):
