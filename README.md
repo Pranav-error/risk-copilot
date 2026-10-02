@@ -6,6 +6,26 @@ outputs from natural language questions."*
 
 **Team cypher:** Sai Pranav · Udith
 
+## At a glance
+
+| | |
+|---|---|
+| **What** | An AML copilot that takes an analyst from a fraud signal to a documented finding and a cited, machine-checked SAR, entirely inside Snowflake |
+| **Built with** | CoCo CLI (3 project skills), Snowpark, Cortex Search, Cortex Analyst + semantic view, Cortex Agent, `AI_COMPLETE` (claude-sonnet-4-5), Streamlit in Snowflake, RBAC + secure views |
+| **Detection** | 5 deterministic rules mapped to numbered policy clauses; the LLM never decides what is fraud |
+| **Measured** | On seeded data: every planted scheme caught except one; precision 0.75–1.00 per rule |
+| **Audit-ready** | Append-only decisions by grant; every SAR's transaction citations machine-verified; auditors see PII masked, even inside AI answers |
+| **Tested** | 12 end-to-end tests on live Snowflake, 30 / 30 governance checks, rule tests that are proven to fail on the bugs they guard |
+
+## Contents
+
+1. [The problem](#1-the-problem) · 2. [Design principles](#2-design-principles) ·
+3. [Architecture](#3-high-level-architecture) · 4. [Pipelines](#4-pipelines) ·
+5. [Analyst process](#5-the-analyst-process--signal-to-sar) · 6. [Data model](#6-data-model) ·
+7. [Governance](#7-governance) · 8. [Evaluation](#8-evaluation) · 9. [Running it](#9-running-it) ·
+10. [Demo walkthrough](#10-demo-walkthrough) · 11. [Known limitations](#11-known-limitations) ·
+12. [Repository layout](#12-repository-layout) · 13. [Status and roadmap](#13-status-and-roadmap)
+
 ---
 
 ## 1. The problem
@@ -80,7 +100,7 @@ flowchart TB
     subgraph FND["Findings — audit trail"]
         direction LR
         FIN["FINDINGS<br/>append-only analyst decisions"]
-        SAR["SAR_REPORTS<br/>cited drafts"]
+        SAR["SAR_REPORTS<br/>AI_COMPLETE drafts · citation check"]
     end
 
     subgraph DET["Detection — deterministic"]
@@ -114,6 +134,22 @@ flowchart TB
 
 Requests flow top to bottom; every layer runs inside one Snowflake account.
 
+### Snowflake features used
+
+| Feature | Where | Why |
+|---|---|---|
+| **CoCo CLI** + project skills | `.cortex/skills/` | The analyst's interface; also how the demo is driven |
+| Stages, file formats, `COPY INTO` | `01_load_raw.sql` | Load the generated CSVs unchanged |
+| **Snowpark Python** stored procedure | `detection/cycles.py` → `DETECT_ROUND_TRIPS()` | Time-ordered graph search for layering loops, without data leaving Snowflake |
+| SQL window functions, `QUALIFY` | `20_detection_rules.sql` | Rolling-window rules with deterministic tie-breaks |
+| `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | `40_cortex_search.sql` | Turn policy and FinCEN PDFs into searchable chunks |
+| **Cortex Search** | `AML_POLICY_SEARCH` | Cite the exact policy / regulation text |
+| **Semantic view** + **Cortex Analyst** | `AML_SEMANTIC_VIEW` | Plain-English questions become governed SQL over business names |
+| **Cortex Agent** | `AML_COPILOT` | One assistant that picks data or documents per question |
+| `AI_COMPLETE` (claude-sonnet-4-5, cross-region) | Streamlit SAR drafting | Draft FinCEN-structured narratives from gathered evidence |
+| Roles, grants, **secure views** | `80_governance.sql`, `60_semantic_view.sql` | Least privilege, append-only decisions, PII masking |
+| **Streamlit in Snowflake** | `AML_COMMAND_CENTRE`, `AML_AUDIT_VIEW` | Command centre; owner's-rights apps make Snowflake enforce each role |
+
 | Layer | Snowflake features | Status |
 |---|---|---|
 | 1 · Data | Stages, `COPY INTO`, tables, file formats | ✅ Live on Snowflake |
@@ -123,7 +159,7 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 | 4 · Finding | Tables + role grants (append-only) | ✅ Live; append-only enforced by grants |
 | 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 30/30 role checks pass |
 | App | Streamlit in Snowflake (two copies, owner's rights) | ✅ Live; full flow tested through the UI |
-| Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ `$aml-detect` verified in CoCo v1.1.87 |
+| Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ All three skills verified end to end in CoCo v1.1.87 |
 
 ---
 
@@ -203,15 +239,18 @@ leaves Snowflake.
 
 ```mermaid
 flowchart LR
-    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance<br/>FATF reports"] -->|"PUT"| S["Stage REG_DOCS"]
+    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance (2 PDFs)"] -->|"PUT"| S["Stage REG_DOCS"]
     S -->|"AI_PARSE_DOCUMENT<br/>LAYOUT mode"| RT["REG_DOCS_RAW"]
     RT -->|"SPLIT_TEXT_MARKDOWN_HEADER<br/>2000 chars, 300 overlap"| CH["REG_DOC_CHUNKS<br/>source · section · chunk"]
     CH --> CS["Cortex Search service<br/>AML_POLICY_SEARCH"]
     CS -->|"SEARCH_PREVIEW"| Q["Skills / Agent<br/>cite source + section"]
 ```
 
-Chunks keep their **source file and section header**, so an answer can cite
-*"internal_aml_policy.pdf, §3 Structuring"* rather than paste anonymous text.
+Chunks keep their **source file and section header**. FinCEN chunks carry real section
+headers (*"Organizing Information in the SAR Narrative"*); the policy PDF is rendered from plain
+text, so its chunks carry the document title and the clause numbers (§3.3, §5.2 …) live in the
+chunk text, which is what answers cite. 119 chunks: policy 11, FinCEN guidance 44, FinCEN filing
+instructions 64.
 
 The internal policy (`corpus/internal_aml_policy.md`) is a fictional bank's monitoring policy
 written for this project. Every detection rule is a numbered clause in it, which is what
@@ -351,6 +390,7 @@ erDiagram
         string SEVERITY
         variant EVIDENCE
         string STATUS
+        string ALERT_KEY "MD5(rule | sorted txn ids)"
     }
     FINDINGS {
         number FINDING_ID PK
@@ -359,6 +399,7 @@ erDiagram
         string ANALYST
         string REASON
         array POLICY_REFS
+        string DECIDED_BY_ROLE
         timestamp DECIDED_AT
     }
     SAR_REPORTS {
@@ -387,6 +428,11 @@ TRANSACTIONS (TXN_ID, FROM_ACCOUNT_ID, TO_ACCOUNT_ID, COUNTERPARTY_REF, AMOUNT, 
              -- COUNTERPARTY_COUNTRY = ISO-2 code, matches FATF_JURISDICTIONS
 TXN_LABELS   (TXN_ID, ACCOUNT_ID, TYPOLOGY)  -- ground truth; detection never reads it
 ```
+
+Views built on top: `ALERT_QUEUE` (alerts + `EFFECTIVE_SEVERITY` + `SEVERITY_REASON`),
+`ALERT_TXNS` (alert × transaction), `ACCOUNT_ACTIVITY` (transaction × internal account side),
+`ALERT_FACTS`, `CUSTOMER_PROFILE` and `SAR_REVIEW` (secure, masked), `SAR_CITATION_CHECK`,
+`RULE_METRICS`.
 
 ---
 
@@ -456,7 +502,11 @@ no threshold was tuned against.
 
 1. **Snowflake account.** Sign up on the *Snowflake CoCo – For Developers* tab at
    signup.snowflake.com (includes $40 CoCo + $360 platform credits). Our build uses an
-   AWS **ap-northeast-1 (Tokyo)** trial account.
+   AWS **ap-northeast-1 (Tokyo)** trial account, **Standard edition**. Claude models are not
+   hosted in every region, so cross-region inference must be on (it was on our trial):
+   `ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION';`
+   On our account `claude-sonnet-4-5` and `llama3.1-70b` work; `claude-4-sonnet` and
+   `mistral-large2` are retired ("legacy state").
 2. **CoCo CLI** (macOS / Linux):
    ```
    curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh     # installs ~/.local/bin/cortex
@@ -478,14 +528,15 @@ no threshold was tuned against.
    ```
    If the wizard shows an *Agent connection* and a *SQL connection*, both must be the same
    account, or tables land in one account and AI usage bills another.
+4. **Python 3.11** for the scripts and tests: `pip install -r requirements.txt`.
 
 ### 9.2 Deploy to Snowflake
 
 One command uploads the files and runs every script, in order, into `RISK_COPILOT.AML`:
 
 ```
-pip install "snowflake-connector-python[secure-local-storage]"
 python3 scripts/deploy.py                      # default connection from ~/.snowflake/connections.toml
+python3 scripts/deploy.py -c <connection>      # or a named one
 python3 scripts/deploy.py --only 20_detection_rules.sql 30_evaluate.sql   # rerun part of it
 ```
 
@@ -543,7 +594,22 @@ A real `$aml-detect` run on the deployed data (CoCo v1.1.87):
 Top of the queue: two wires to FATF black-list countries (North Korea, Myanmar; $360,934 and
 $289,639), then a structuring case raised to CRITICAL because the customer is high-risk (§7.2).
 
-### 9.4 End-to-end test on live Snowflake
+### 9.4 Open the app
+
+Snowsight → **Projects → Streamlit** → `AML_COMMAND_CENTRE` (works cases: decide, draft and
+approve SARs) or `AML_AUDIT_VIEW` (read-only, PII masked). Direct link format:
+`https://app.snowflake.com/<org>/<account>/#/streamlit-apps/RISK_COPILOT.AML.AML_COMMAND_CENTRE`.
+Opening an app needs a role that can use it; the deploying admin can open both.
+
+| Tab | What it shows |
+|---|---|
+| Alert queue | KPIs (open, critical, escalated, SARs), filters by rule / severity / status, alerts by rule |
+| Investigate | Severity and its stored reason, the policy clause text (Cortex Search), rule evidence, the transactions, KYC, linked alerts, decision form |
+| Ask the copilot | Chat with the Cortex Agent; answers with tables and the SQL Cortex Analyst generated |
+| SARs | Draft from an escalated alert with Cortex AI; citation check; approve (officer only, and only when every citation verifies) |
+| Audit & metrics | Append-only decision log with the deciding role; rule precision / recall |
+
+### 9.5 End-to-end test on live Snowflake
 
 Every skill was run through CoCo against the deployed data, and every fact it stated was
 checked against the database by query.
@@ -576,16 +642,19 @@ What testing caught and fixed along the way:
 | Agent said CRITICAL meant "pattern across linked accounts" | `SEVERITY_REASON` exposed in the semantic view; agent told to repeat it |
 | Auditor could read names: masking policies unsupported on Standard | Secure views; auditor's table grants revoked; verified masked through the agent too |
 
-### 9.5 Locally, no Snowflake needed
+### 9.6 Tests
 
-The real SQL files run on DuckDB; only Snowflake-only functions are translated (`tests/duck.py`).
+Rule logic runs locally on DuckDB from the real SQL files (only Snowflake-only functions are
+translated, `tests/duck.py`); the rest run against live Snowflake.
 
 ```
-pip install duckdb
+# local, no Snowflake needed
 python3 detection/cycles.py           # cycle detector self-check
 python3 tests/test_rules_duckdb.py    # every rule on planted typologies: case recall 1.0, rerun stable
 python3 tests/run_on_data.py          # full pipeline on data/: RULE_METRICS + rerun stable
-python3 scripts/check_rerun_stable.py # same rerun check, live on Snowflake
+
+# live on Snowflake
+python3 scripts/check_rerun_stable.py # rerun never adds, renumbers or resets alerts
 python3 scripts/check_governance.py   # every role x every action, live on Snowflake
 
 # the app, headless against live Snowflake (Python 3.11: streamlit==1.39.0, snowflake-snowpark-python)
@@ -596,7 +665,7 @@ APP_ROLE=AUDITOR            python tests/test_app_chat.py
 streamlit run streamlit/streamlit_app.py                       # or run it locally
 ```
 
-### 9.6 Gotchas we hit
+### 9.7 Gotchas we hit
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -611,34 +680,81 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 | `CREATE OR REPLACE MASKING POLICY` fails when attached; masking unsupported on Standard | Edition | Secure views |
 | Agent tables missing from the text answer | Tables arrive as a separate `table` content item | App renders `result_set` as a dataframe |
 | Browser OAuth expires about hourly | Token lifetime | Key-pair auth for scripts |
+| Role checks passed that shouldn't have | `DEFAULT_SECONDARY_ROLES = ('ALL')` keeps every granted role active | `USE SECONDARY ROLES NONE` in checks; masking keys on `CURRENT_ROLE()` |
+| `claude-4-sonnet`, `mistral-large2` errors | Retired models ("legacy state") | `claude-sonnet-4-5` |
+| App behaviour could differ in Snowflake | Unpinned `pandas` resolves to 3.x there; tests ran on 2.3.3 | Pinned `streamlit=1.39.0`, `pandas=2.3.3` in `environment.yml` |
+| Restoring a file with `git checkout` lost uncommitted work | It restores the committed version | Back up with `cp` before mutation tests |
 
 ---
 
-## 10. Repository layout
+## 10. Demo walkthrough
+
+About 4 minutes, recorded in the CoCo CLI as the submission requires, then the app.
+
+| # | Do | Shows |
+|---|---|---|
+| 1 | `cortex` → `$aml-detect` | Deterministic rules run; 68 alerts; North Korea / Myanmar wires and a structuring case on top, each with its policy clause |
+| 2 | `$aml-investigate 37` | 4 cash deposits of $9,391–$9,712 in one day = $38,296.10; §3.3 met; CRITICAL because the customer is high-risk (§7.2); §7.3 income clause *relevant but not met* (1.43× vs 3×) |
+| 3 | Escalate with a name and reason; approve the write in CoCo | A human decision, recorded append-only |
+| 4 | `$sar-draft 37` | FinCEN-structured SAR, every claim cited, "appears consistent with", citation check 4 / 4 |
+| 5 | `$sar-draft` on an un-escalated alert | Refuses: no SAR without a human review |
+| 6 | App → Ask the copilot: *"Which 3 high-risk customers deposited the most cash?"* | Agent answer + table + generated SQL |
+| 7 | Same question in `AML_AUDIT_VIEW` | Same numbers, names `*** masked ***`, enforced by Snowflake |
+| 8 | App → SARs → Approve; Audit tab | Approval gated on citations; decision log with the deciding role; rule metrics |
+
+---
+
+## 11. Known limitations
+
+| Limitation | Why it matters | What we'd do next |
+|---|---|---|
+| Velocity and pass-through thresholds were tuned on the same generated file they're scored on | Reported precision / recall is optimistic | Score on a second, differently seeded file nobody tuned against |
+| Synthetic data from one generator | Patterns are cleaner than real transaction streams | Real (de-identified) data, or a second independent generator |
+| `FATF_JURISDICTIONS` is the June 2025 FATF list, entered from memory, plus the bank's own list | FATF updates three times a year | Load the current FATF statement into `corpus/` and refresh the table from it |
+| Amounts read as USD although the generator labels them INR | The typologies are sized for US thresholds | Make currency and thresholds a jurisdiction setting (RBI / FIU-IND as a second profile) |
+| Append-only holds for working roles, not for account admins | `ACCOUNTADMIN` can still alter `FINDINGS` | Hash-chained findings or an external immutable log; restrict admin use |
+| Masking uses secure views (Standard edition) | Anyone with a direct grant on the base tables bypasses it | Enterprise tag-based masking policies |
+| AI explanations are constrained, not guaranteed | The model still writes the prose | Facts it must repeat are stored as data; transaction citations are machine-checked; a named human approves every SAR |
+| A stale OPEN alert whose pattern stops firing is kept, not closed | Reruns only add new alerts | A `RESOLVED_BY_RERUN` status once data starts changing under existing alerts |
+| FATF PDFs not yet in the search corpus | FATF questions get FinCEN / policy answers only | Add them by hand (fatf-gafi.org blocks scripted downloads) |
+
+---
+
+## 12. Repository layout
 
 | Path | What | Owner |
 |---|---|---|
-| `data/` | Generated synthetic data + mapping notes (`data/README.md`) | Udith |
-| `sql/01_load_raw.sql` | Stage + `COPY INTO` raw tables | Pranav |
+| `README.md` | This document | both |
+| `requirements.txt` | Python 3.11 dependencies for scripts, tests and running the app locally | Pranav |
+| `data/` | Generated synthetic CSVs + mapping notes (`data/README.md`) | Udith |
+| `corpus/` | Policy (`internal_aml_policy.md` / `.pdf`) + FinCEN PDFs for Cortex Search | Pranav |
+| `sql/01_load_raw.sql` | Stages + `COPY INTO` raw tables | Pranav |
 | `sql/02_canonical.sql` | Raw → data contract | Pranav |
-| `sql/05_reference.sql` | FATF black/grey list + bank's own high-risk list | Pranav |
-| `sql/10_alerts_and_cycle_proc.sql` | `ALERTS` table + registers the cycle proc | Pranav |
-| `sql/20_detection_rules.sql` | Four SQL rules (structuring, velocity, pass-through, geo-risk), `ALERT_QUEUE`, `ALERT_TXNS` | Pranav |
+| `sql/05_reference.sql` | FATF black / grey list + the bank's own high-risk list | Pranav |
+| `sql/10_alerts_and_cycle_proc.sql` | `ALERTS` table + registers `DETECT_ROUND_TRIPS()` | Pranav |
+| `sql/20_detection_rules.sql` | Structuring, velocity, pass-through, geo-risk; `ALERT_QUEUE`, `ALERT_TXNS` | Pranav |
 | `sql/30_evaluate.sql` | `RULE_METRICS` against ground truth | Pranav |
-| `sql/40_cortex_search.sql` | Parse, chunk, index the corpus | Pranav |
-| `sql/50_findings.sql` | `FINDINGS`, `SAR_REPORTS` | Pranav |
-| `detection/cycles.py` | Round-trip / layering cycle search (Snowpark handler) | Pranav |
-| `.cortex/skills/` | `aml-detect`, `aml-investigate`, `sar-draft` | Pranav |
-| `corpus/` | Policy + FinCEN/FATF documents for Cortex Search | Pranav |
-| `tests/` | DuckDB harness, planted-typology test, real-data run | Pranav |
-| `scripts/deploy.py` | Uploads files + runs all SQL in order on Snowflake | Pranav |
-| `scripts/check_rerun_stable.py` | Live check: reruns never change alerts | Pranav |
-| `scripts/check_governance.py` | Live check: each role can do exactly what it should | Pranav |
-| `sql/60_semantic_view.sql` | Secure views + `AML_SEMANTIC_VIEW` | Pranav |
+| `sql/40_cortex_search.sql` | Parse, chunk, index the corpus → `AML_POLICY_SEARCH` | Pranav |
+| `sql/50_findings.sql` | `FINDINGS`, `SAR_REPORTS`, `SAR_CITATION_CHECK` | Pranav |
+| `sql/60_semantic_view.sql` | Secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` + `AML_SEMANTIC_VIEW` | Pranav |
 | `sql/70_agent.sql` | Cortex Agent `AML_COPILOT` | Pranav |
 | `sql/80_governance.sql` | Roles, grants, ground-truth isolation, masking | Pranav |
 | `sql/90_streamlit.sql` | Deploys the app twice (officer, auditor) | Pranav |
-| `streamlit/` | `streamlit_app.py` + `environment.yml` (streamlit 1.39.0, pandas 2.3.3) | Pranav |
+| `detection/cycles.py` | Round-trip / layering cycle search (Snowpark handler + self-check) | Pranav |
+| `.cortex/skills/aml-detect/SKILL.md` | CoCo skill: run rules, summarise queue, show metrics | Pranav |
+| `.cortex/skills/aml-investigate/SKILL.md` | CoCo skill: gather evidence, explain with citations, record the decision | Pranav |
+| `.cortex/skills/sar-draft/SKILL.md` | CoCo skill: refuse without escalation, draft a cited SAR, run the citation check | Pranav |
+| `streamlit/streamlit_app.py` | The command centre | Pranav |
+| `streamlit/environment.yml` | Pinned app packages (streamlit 1.39.0, pandas 2.3.3) | Pranav |
+| `scripts/deploy.py` | Uploads files + runs every SQL script in order | Pranav |
+| `scripts/check_rerun_stable.py` | Live: reruns never add, renumber or reset alerts | Pranav |
+| `scripts/check_governance.py` | Live: each role can do exactly what it should (30 checks) | Pranav |
+| `tests/duck.py` | Runs the repo's SQL on DuckDB; shared rerun-stability check | Pranav |
+| `tests/test_rules_duckdb.py` | Every rule on planted typologies | Pranav |
+| `tests/run_on_data.py` | Full pipeline on `data/` with metrics | Pranav |
+| `tests/test_app.py` | App renders per role, live | Pranav |
+| `tests/test_app_flow.py` | Escalate → SAR → approve through the UI, live; cleans up | Pranav |
+| `tests/test_app_chat.py` | Chat through the UI, live | Pranav |
 | `docs/brief.txt` | Submission brief (≤1024 characters) | both |
 
 ### Corpus sources
@@ -652,7 +768,7 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 
 ---
 
-## 11. Status and roadmap
+## 13. Status and roadmap
 
 Submission closes **4 Oct 2026, 11:59 PM IST**. Required: public GitHub repo, deployed link,
 ≤1024-character brief, 3–5 minute demo video **recorded in CoCo CLI** (input → processing →
@@ -665,7 +781,7 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ✅ | Deployed to Snowflake (`RISK_COPILOT.AML`); metrics match the local run exactly | Pranav |
 | ✅ | Cortex Search over policy + FinCEN docs (119 chunks) | Pranav |
 | ✅ | `$aml-detect` runs end to end in CoCo | Pranav |
-| ✅ | All three skills tested end to end on live alerts (section 9.4) | Pranav |
+| ✅ | All three skills tested end to end on live alerts (section 9.5) | Pranav |
 | ✅ | Semantic view + Cortex Analyst + Cortex Agent, answers verified | Pranav |
 | ✅ | Roles, append-only grants, PII masking (secure views), 30 / 30 checks | Pranav |
 | ✅ | Streamlit command centre, officer + auditor copies, full flow tested through the UI | Pranav |
@@ -673,6 +789,9 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ⏳ | FATF PDFs into `corpus/`; refresh `FATF_JURISDICTIONS` from the current list | Udith |
 | ✅ | Repo public | Pranav |
 | ⏳ | Deck on the hackathon template, demo video | both |
+
+**Thanks to:** FinCEN for the public SAR guidance in `corpus/`; the round-trip detector's idea
+comes from Pranav's earlier Arbix project.
 
 **Beyond the hackathon:** case-management integration, analyst feedback feeding threshold
 tuning, regulator-format export (FinCEN BSA XML), RBI / FIU-IND STR as a second jurisdiction,
