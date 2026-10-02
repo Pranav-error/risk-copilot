@@ -29,7 +29,14 @@ SELECT PARSE_JSON(SNOWFLAKE.CORTEX.SEARCH_PREVIEW('AML_POLICY_SEARCH',
 
 ## Write the narrative
 
-Follow FinCEN's structure (policy §8.3). Plain, factual, no speculation about guilt:
+Follow FinCEN's structure (policy §8.3). Plain and factual:
+
+- **No legal conclusions.** Never write that the subject "violated", "committed" or "is guilty
+  of" anything. Describe what happened and why it *appears consistent with* a typology. A SAR
+  reports suspicion; it does not decide guilt.
+- Report **`EFFECTIVE_SEVERITY`** from `ALERT_QUEUE` with its `SEVERITY_REASON` exactly as
+  stored. Never infer a different reason (a linked alert does not change severity).
+- Timestamps carry no timezone. Write them as they are; never add "UTC" or any zone.
 
 1. **Introduction:** the reason for filing, in one or two sentences.
 2. **Who:** subject name, customer ID, account(s), occupation, declared income, risk rating.
@@ -38,6 +45,9 @@ Follow FinCEN's structure (policy §8.3). Plain, factual, no speculation about g
 5. **Where:** accounts, channels, counterparty countries.
 6. **Why it is suspicious:** the pattern, measured against the policy threshold, citing the clause.
 7. **Analyst review:** who escalated it, when, and their stated reason (from `FINDINGS`).
+
+Cite a policy clause as breached only when its threshold is met, with the numbers. Do not
+add clauses the analyst's investigation did not establish.
 
 Put the citation in brackets after each claim: `[TXN T0001234, T0001240]`, `[Policy §3.3]`,
 `[FinCEN SAR Narrative Guidance]`. A claim with no citation does not go in.
@@ -49,6 +59,14 @@ INSERT INTO SAR_REPORTS (ALERT_ID, STATUS, NARRATIVE, CITED_TXN_IDS, CITED_SOURC
 SELECT <id>, 'DRAFT', '<narrative, single quotes doubled>',
        PARSE_JSON('[<txn ids cited>]'), PARSE_JSON('[<sources cited>]'), 'CoCo sar-draft skill';
 ```
+
+Then verify every transaction ID in the narrative against the data:
+```sql
+SELECT TXNS_CITED, VERIFIED, UNVERIFIED FROM SAR_CITATION_CHECK
+WHERE SAR_ID = (SELECT MAX(SAR_ID) FROM SAR_REPORTS WHERE ALERT_ID = <id>);
+```
+Report it as *"Citation check: VERIFIED / TXNS_CITED transaction IDs verified against the
+ledger."* If `UNVERIFIED` has any entry, say so plainly and do not present the draft as ready.
 
 Show the narrative, then state: *"Draft only. A compliance officer must review and file it
 (policy §2.2). Filing deadline: 30 days from detection (§8.2). Do not disclose to the subject (§8.4)."*
