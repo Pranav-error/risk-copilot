@@ -24,7 +24,8 @@ outputs from natural language questions."*
 5. [Analyst process](#5-the-analyst-process--signal-to-sar) · 6. [Data model](#6-data-model) ·
 7. [Governance](#7-governance) · 8. [Evaluation](#8-evaluation) · 9. [Running it](#9-running-it) ·
 10. [Demo walkthrough](#10-demo-walkthrough) · 11. [Known limitations](#11-known-limitations) ·
-12. [Repository layout](#12-repository-layout) · 13. [Status and roadmap](#13-status-and-roadmap)
+12. [Repository layout](#12-repository-layout) · 13. [Status and roadmap](#13-status-and-roadmap) ·
+A. [Technical reference](#appendix-a-technical-reference)
 
 ---
 
@@ -160,6 +161,40 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 | 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 36/36 role checks pass |
 | App | Streamlit in Snowflake (two copies, owner's rights) | ✅ Live; full flow tested through the UI |
 | Interface | CoCo CLI project skills (`.cortex/skills/`) | ✅ All three skills verified end to end in CoCo v1.1.87 |
+
+### Under the hood — what Snowflake calls each piece
+
+No external services: no Pinecone, no OpenAI, no LangChain. Each component has a native
+Snowflake equivalent.
+
+| If you know… | Snowflake's version | What it is | Ours |
+|---|---|---|---|
+| **Pinecone / Weaviate** (managed vector search) | **Cortex Search** | Managed **hybrid** search engine: vector + keyword + semantic re-ranker, indexed and refreshed by Snowflake. Built on search technology from Neeva (acquired by Snowflake in 2023) | `AML_POLICY_SEARCH` |
+| **OpenAI embeddings** | **Arctic Embed** | Snowflake's own open embedding models; Cortex Search embeds chunks with one automatically | `snowflake-arctic-embed-m-v1.5` |
+| **pgvector** (vectors in a table) | `VECTOR` data type + `AI_EMBED`, `VECTOR_COSINE_SIMILARITY` | Native vector column and functions, for hand-built similarity search | Not needed: Cortex Search manages its own vectors |
+| **dbt metrics / LookML** (semantic layer) | **Semantic View** | Metadata only, **no vectors**: business names, synonyms, joins, metrics, SQL-writing rules | `AML_SEMANTIC_VIEW` |
+| **Text-to-SQL** (Vanna, LlamaIndex SQL) | **Cortex Analyst** | Reads the semantic view, writes SQL, runs it as the asking role | Tool `AmlData` |
+| **LangChain / LangGraph agent** | **Cortex Agent** | Chooses tools per question, combines their results, answers with citations | `AML_COPILOT` |
+| **OpenAI / Anthropic API** | `AI_COMPLETE` (Cortex AI functions) | LLM call from SQL; Claude, Llama and others hosted in Snowflake, cross-region if needed | `claude-sonnet-4-5` |
+| **Unstructured.io / PyMuPDF** | `AI_PARSE_DOCUMENT` | PDF → text with layout (headings, tables) | `LAYOUT` mode |
+| **LangChain text splitters** | `SPLIT_TEXT_MARKDOWN_HEADER` | Chunk by markdown headers with size + overlap | 2,000 chars, 300 overlap |
+| **AWS Lambda / Python service** | **Snowpark** stored procedure | Python running inside Snowflake next to the data | `DETECT_ROUND_TRIPS()` |
+| **Streamlit Cloud / Vercel** | **Streamlit in Snowflake** | App hosted in the account, runs with its owner's role | `AML_COMMAND_CENTRE`, `AML_AUDIT_VIEW` |
+| **Claude Code / Copilot CLI** | **CoCo (Cortex Code) CLI** | Snowflake's coding agent with project skills | `.cortex/skills/` |
+| **Okta groups / app-level permissions** | Roles + grants + **secure views** | Access enforced by the database itself | 3 roles, 2 secure views |
+
+**How the semantic side and the search side differ:**
+
+| | Semantic View + Cortex Analyst | Cortex Search |
+|---|---|---|
+| Data | Structured tables | Unstructured documents (PDF text) |
+| Uses vectors? | **No**: names, joins and metrics as metadata | **Yes**: Arctic Embed vectors, plus keyword and re-ranker |
+| Produces | SQL, run as the asking role | Ranked chunks with source and scores |
+| Answers | "How much cash did high-risk customers deposit?" | "What does our policy say about structuring?" |
+| Governed by | Grants and secure views on the underlying tables | `USAGE` on the search service |
+
+The Cortex Agent sends each question to one, the other, or both. That is the "hybrid" in the
+copilot, on top of the hybrid retrieval inside Cortex Search.
 
 ---
 
@@ -723,7 +758,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | 3 | Escalate with a name and reason; approve the write in CoCo | A human decision, recorded append-only |
 | 4 | `$sar-draft 37` | FinCEN-structured SAR, every claim cited, "appears consistent with", citation check 4 / 4 |
 | 5 | `$sar-draft` on an un-escalated alert | Refuses: no SAR without a human review |
-| 6 | App → Ask the copilot: *"Which 3 high-risk customers deposited the most cash?"* | Agent answer + table + generated SQL |
+| 6 | App → Ask the copilot: *"Which 3 high-risk customers deposited the most cash?"* (≈ 20 s; pre-ask it before recording or cut the wait) | Agent answer + table + generated SQL |
 | 7 | Same question in `AML_AUDIT_VIEW` | Same numbers, names `*** masked ***`, enforced by Snowflake |
 | 8 | App → SARs → Approve; Audit tab | Approval gated on citations; decision log with the deciding role; rule metrics |
 
@@ -822,6 +857,100 @@ comes from Pranav's earlier Arbix project.
 **Beyond the hackathon:** case-management integration, analyst feedback feeding threshold
 tuning, regulator-format export (FinCEN BSA XML), RBI / FIU-IND STR as a second jurisdiction,
 ML risk scoring behind the deterministic rules (explainable boosting, never a black box).
+
+---
+
+## Appendix A. Technical reference
+
+Every parameter, as deployed.
+
+### Account and environment
+
+| Setting | Value |
+|---|---|
+| Cloud / region | AWS `ap-northeast-1` (Tokyo) |
+| Edition | Standard (trial: $40 CoCo + $360 platform credits) |
+| Cross-region inference | `CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION'` (Claude is not hosted in every region) |
+| Warehouse | `COMPUTE_WH`, X-Small, Gen 2, auto-suspend 300 s |
+| Database / schema | `RISK_COPILOT.AML` |
+| CoCo CLI | v1.1.87; SQL tool name `snowflake_sql_execute` |
+| Auth | Browser OAuth (CoCo, people); RSA key pair (`SNOWFLAKE_JWT`) for scripts |
+| Credit use to build + test everything | ≈ 9.7 credits (CoCo 6.4, warehouse 1.9, agent 0.9, AI functions 0.5) |
+
+### Detection
+
+| Item | Value |
+|---|---|
+| Rules | 5: structuring, velocity, pass-through (SQL); geo-risk (SQL + FATF table); round-trip cycles (Snowpark) |
+| Thresholds | See section 4.2 and `corpus/internal_aml_policy.md` |
+| Cycle search | Python 3.11 Snowpark procedure; bounded DFS over time-ordered edges; 2–4 hops; 7-day window; ≥ 80 % conserved per hop; min $10,000 |
+| Alert identity | `ALERT_KEY = MD5(rule \| sorted txn ids)`; insert only new keys |
+| Tie-break | Every `QUALIFY ROW_NUMBER()` orders by score, then earliest time, then txn id |
+| FATF list | June 2026 plenary: 3 black, 22 grey, + 1 from the bank's own list |
+| Output | 68 alerts on the generated data |
+
+### Evidence (Cortex Search)
+
+| Item | Value |
+|---|---|
+| Service | `AML_POLICY_SEARCH`, search column `CHUNK`, attributes `SOURCE`, `SECTION` |
+| Embedding model | `snowflake-arctic-embed-m-v1.5` |
+| Scoring | `text_match` (keyword) + `cosine_similarity` (vector) → `reranker_score` (final order) |
+| Refresh | `TARGET_LAG = '1 day'` on `COMPUTE_WH` |
+| Parsing | `AI_PARSE_DOCUMENT(..., {'mode': 'LAYOUT'})` |
+| Chunking | `SPLIT_TEXT_MARKDOWN_HEADER`, headers `#` / `##`, 2,000 characters, 300 overlap |
+| Corpus | 3 PDFs → 119 chunks (policy 11, FinCEN SAR narrative guidance 44, FinCEN filing instructions 64) |
+
+### Semantic view (`AML_SEMANTIC_VIEW`)
+
+| Part | Count | Contents |
+|---|---|---|
+| Logical tables | 5 | `customers` (via secure view `CUSTOMER_PROFILE`), `accounts`, `activity` (`ACCOUNT_ACTIVITY`), `alerts` (`ALERT_FACTS`), `findings` |
+| Relationships | 4 | accounts → customers, activity → accounts, alerts → accounts, findings → alerts |
+| Facts | 2 | `amount`, `declared_monthly_income` |
+| Dimensions | 23 | IDs, names, risk rating, PEP flag, channel, direction, country, date, month, rule, severity, base severity, severity reason, status, policy clause, decision, analyst … |
+| Metrics | 9 | `total_amount`, `transaction_count`, `cash_deposits`, `high_risk_country_wires`, `alert_count`, `open_alerts`, `critical_alerts`, `customer_count`, `decision_count` |
+| SQL rules | 1 block | USD amounts; "high-risk" = `RISK_RATING='HIGH'`; cash deposit = `CASH` + `IN`; never read `TXN_LABELS` |
+
+### Agent (`AML_COPILOT`)
+
+| Item | Value |
+|---|---|
+| Orchestration model | `claude-sonnet-4-5` |
+| Budget per question | 60 seconds, 16,000 tokens |
+| Tools | `AmlData` (`cortex_analyst_text_to_sql` on the semantic view, warehouse `COMPUTE_WH`); `AmlPolicy` (`cortex_search`, max 4 results, title `SOURCE`, id `SECTION`) |
+| Instructions | Never decide fraud or state guilt; cite every number and rule; call a clause met only with the arithmetic; explain severity only from `SEVERITY_REASON` |
+| Called via | `SNOWFLAKE.CORTEX.DATA_AGENT_RUN` (non-streaming); answer = `text` + `table` content items |
+| Latency (measured, incl. connection) | ≈ 20 s for one tool (data *or* policy); ≈ 48 s when it uses both ("why was alert 37 raised…") |
+
+### SAR drafting and checking
+
+| Item | Value |
+|---|---|
+| Model | `AI_COMPLETE('claude-sonnet-4-5', …)` from the app; CoCo's own model in `$sar-draft` |
+| Input | Alert, `SEVERITY_REASON`, rule evidence, policy clause text, transactions, KYC, the analyst's escalation |
+| Structure | Introduction · Who · What · When · Where · Why · Analyst review (FinCEN) |
+| Guards | Refuses without a human escalation; no legal conclusions; no invented timezone; cite or omit |
+| Check | `SAR_CITATION_CHECK`: every `TXN_[0-9A-F]{12}` must exist and touch the alerted account or be in the alert's evidence; approval disabled otherwise |
+
+### App
+
+| Item | Value |
+|---|---|
+| Runtime | `SYSTEM$WAREHOUSE_RUNTIME` (reads `environment.yml`); Python 3.11 |
+| Packages | `streamlit=1.39.0`, `pandas=2.3.3` |
+| Copies | `AML_COMMAND_CENTRE` owned by `COMPLIANCE_OFFICER`; `AML_AUDIT_VIEW` owned by `AUDITOR` |
+| Calls | Cortex Search (`SEARCH_PREVIEW`), Cortex Agent (`DATA_AGENT_RUN`), `AI_COMPLETE`, plain SQL with bind parameters |
+
+### Governance
+
+| Item | Value |
+|---|---|
+| Roles | `AML_ANALYST` ⊂ `COMPLIANCE_OFFICER`; `AUDITOR`; both under `SYSADMIN` |
+| Masking | Secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` keyed on `CURRENT_ROLE()` |
+| Append-only | `INSERT` without `UPDATE` / `DELETE` on `FINDINGS`, `SAR_REPORTS` for analysts |
+| Rebuild safety | `COPY GRANTS` on every recreated table / view / semantic view; search service and agent re-granted by `80_governance.sql` |
+| Verified by | `scripts/check_governance.py`: 36 checks with secondary roles off |
 
 ---
 
