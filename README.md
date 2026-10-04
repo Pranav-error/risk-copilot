@@ -13,9 +13,9 @@ outputs from natural language questions."*
 | **What** | An AML copilot that takes an analyst from a fraud signal to a documented finding and a cited, machine-checked SAR, entirely inside Snowflake |
 | **Built with** | CoCo CLI (3 project skills), Snowpark, Cortex Search (hybrid: keyword + vector + reranker), Cortex Analyst + semantic view, Cortex Agent, `AI_COMPLETE` (claude-sonnet-4-5), Streamlit in Snowflake, RBAC + secure views |
 | **Detection** | 5 deterministic rules mapped to numbered policy clauses; the LLM never decides what is fraud |
-| **Measured** | On seeded data: every planted scheme caught except one; precision 0.75–1.00 per rule |
+| **Measured** | On a held-out dataset nothing was tuned against: 4 of 5 rules catch every planted scheme; pass-through 10/13; precision 0.71–1.00 |
 | **Audit-ready** | Append-only decisions by grant; every SAR's transaction citations machine-verified; auditors see PII masked, even inside AI answers |
-| **Tested** | 14 end-to-end tests on live Snowflake, 36 / 36 governance checks, a full redeploy from scratch, rule tests that are proven to fail on the bugs they guard |
+| **Tested** | Two datasets (one held out), 14 end-to-end tests on live Snowflake, 36 / 36 governance checks, a full redeploy from scratch, rule tests that are proven to fail on the bugs they guard |
 
 ## Contents
 
@@ -155,7 +155,7 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 |---|---|---|
 | 1 · Data | Stages, `COPY INTO`, tables, file formats | ✅ Live on Snowflake |
 | 2 · Detection | SQL, Snowpark Python stored procedure | ✅ Live on Snowflake |
-| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (119 chunks, 3 documents) |
+| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (471 chunks, 5 documents: policy, FinCEN, FATF) |
 | 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | ✅ Live; answers verified against hand-written SQL |
 | 4 · Finding | Tables + role grants (append-only) | ✅ Live; append-only enforced by grants |
 | 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 36/36 role checks pass |
@@ -274,7 +274,7 @@ leaves Snowflake.
 
 ```mermaid
 flowchart LR
-    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance (2 PDFs)"] -->|"PUT"| S["Stage REG_DOCS"]
+    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance (2 PDFs)<br/>FATF Recommendations + PML report"] -->|"PUT"| S["Stage REG_DOCS"]
     S -->|"AI_PARSE_DOCUMENT<br/>LAYOUT mode"| RT["REG_DOCS_RAW"]
     RT -->|"SPLIT_TEXT_MARKDOWN_HEADER<br/>2000 chars, 300 overlap"| CH["REG_DOC_CHUNKS<br/>source · section · chunk"]
     CH --> CS["Cortex Search service<br/>AML_POLICY_SEARCH"]
@@ -298,8 +298,14 @@ view (structured), to Cortex Search (documents), or both (section 4.4).
 Chunks keep their **source file and section header**. FinCEN chunks carry real section
 headers (*"Organizing Information in the SAR Narrative"*); the policy PDF is rendered from plain
 text, so its chunks carry the document title and the clause numbers (§3.3, §5.2 …) live in the
-chunk text, which is what answers cite. 119 chunks: policy 11, FinCEN guidance 44, FinCEN filing
-instructions 64.
+chunk text, which is what answers cite. 471 chunks: FATF Recommendations 256, FATF Professional
+Money Laundering 96, FinCEN filing instructions 64, FinCEN SAR narrative guidance 44, policy 11.
+
+**Clause lookups are filtered to the bank's policy.** Adding 352 FATF chunks made an unfiltered
+"policy section 6.2" search return FATF text, and the geo-risk alert lost its clause in the app.
+The app and `$aml-investigate` now pass `"filter": {"@eq": {"SOURCE": "internal_aml_policy.pdf"}}`
+for the clause and search regulator guidance separately. Checked for all five rules; the agent
+answers FATF questions from the new documents (e.g. Recommendation 12 on PEPs).
 
 The internal policy (`corpus/internal_aml_policy.md`) is a fictional bank's monitoring policy
 written for this project. Every detection rule is a numbered clause in it, which is what
@@ -564,7 +570,21 @@ pattern (bursty legitimate activity looks similar) rather than an artifact of tu
 PASS_THROUGH's one miss on `data/` doesn't reproduce here, because the generator's
 rapid-layering outflow fraction was widened from 25–40% to 35–45% per step (worst case ~58%
 vs. the old worst case ~44%, which is what originally fell under the 50% threshold) — see
-`data_holdout/README.md` for the full explanation. These are the numbers to quote to judges.
+`data_holdout/README.md` for the full explanation.
+
+**Caveat on PASS_THROUGH (checked by re-generation).** That generator change was made *after*
+seeing the rule's 50% threshold, so the held-out PASS_THROUGH result is not independent of the
+rule. Regenerating the same seed (20259) with the **original** 25–40% setting gives:
+
+| Rule | Held-out, adjusted generator | Held-out, original generator (independent) |
+|---|---|---|
+| PASS_THROUGH | 13 / 13 cases, precision 1.00 | **10 / 13 cases (0.77)**, precision 1.00 |
+| All other rules | as above | identical |
+
+**Numbers to quote:** structuring 8/8, geo-risk 11/11, round-trip all 4 cycles, velocity 9/9
+cases (precision 0.71), pass-through **10/13** — every rule with precision ≥ 0.71 on data no
+threshold was tuned against. The three pass-through misses send out under half their inflow;
+catching them means lowering the 50% line, which would need its own false-positive check.
 
 ---
 
@@ -630,7 +650,7 @@ What it creates:
 | Contract tables | `CUSTOMERS`, `ACCOUNTS`, `TRANSACTIONS`, `TXN_LABELS`, `FATF_JURISDICTIONS` |
 | Detection | `ALERTS`, `ALERT_CANDIDATES`, procedure `DETECT_ROUND_TRIPS()`, views `ALERT_QUEUE`, `ALERT_TXNS` |
 | Evaluation | views `RULE_TYPOLOGY`, `RULE_METRICS` |
-| Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (119 chunks), Cortex Search service `AML_POLICY_SEARCH` |
+| Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (471 chunks), Cortex Search service `AML_POLICY_SEARCH` |
 | Findings | `FINDINGS`, `SAR_REPORTS`, view `SAR_CITATION_CHECK` |
 | Question layer | views `ACCOUNT_ACTIVITY`, `ALERT_FACTS`; semantic view `AML_SEMANTIC_VIEW`; agent `AML_COPILOT` |
 | Governance | roles `AML_ANALYST`, `COMPLIANCE_OFFICER`, `AUDITOR`; secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` |
@@ -762,6 +782,8 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 | After a detection rerun, every role lost access to the alert queue | `CREATE OR REPLACE VIEW` drops grants | `COPY GRANTS` on every recreated object; caught by running the governance check after the rerun check |
 | After a full redeploy the app crashed for every role | Recreating the Cortex Search service dropped its grant; the governance check never tested search | Governance re-grants it last; the check now covers search and the agent (proven to fail first) |
 | App showed "pyproject.toml file does not exist" in Snowsight, though headless tests passed | New Streamlits default to the **container** runtime (wants `pyproject.toml`); the app targets the **warehouse** runtime (`environment.yml`). Local tests can't see the runtime | `RUNTIME_NAME = 'SYSTEM$WAREHOUSE_RUNTIME'` on both apps; caught only by opening the app in the browser |
+| Geo-risk alert lost its policy clause after the FATF PDFs were indexed | Unfiltered search returned FATF text for "policy section 6.2" | Clause lookups filter on `SOURCE = internal_aml_policy.pdf` |
+| Rerun check failed intermittently on the held-out data (velocity) | Three windows summed to exactly $19,376.44; DuckDB sums floats, so the "largest" flipped with row order | Window scores rounded to cents before comparing; 40 shuffled reruns identical. Snowflake's exact decimals were never affected |
 | `COPY GRANTS` rejected on the semantic view / agent | Must be the last clause on a semantic view; agents don't accept it | Moved to the end; agent re-granted by `80_governance.sql` |
 
 ---
@@ -788,7 +810,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 
 | Limitation | Why it matters | What we'd do next |
 |---|---|---|
-| Velocity and pass-through thresholds were tuned on `data/` | `data/`'s own numbers are optimistic | **Done:** scored on `data_holdout/` (second seed, nobody tuned against it) — see section 8 |
+| Velocity and pass-through thresholds were tuned on `data/` | `data/`'s own numbers are optimistic | **Done:** scored on `data_holdout/` (second seed). Pass-through scored again with the original generator settings, since the generator was adjusted for it: 10/13 — see section 8 |
 | Synthetic data from one generator | Patterns are cleaner than real transaction streams | Real (de-identified) data, or a second independent generator |
 | `FATF_JURISDICTIONS` is the June 2026 FATF list (3 black, 22 grey; cross-checked against two published lists on 2026-10-02) plus the bank's own list | FATF updates it three times a year; the next plenary is October 2026 | Refresh after each plenary; load the official FATF statement into `corpus/` |
 | Amounts read as USD although the generator labels them INR | The typologies are sized for US thresholds | Make currency and thresholds a jurisdiction setting (RBI / FIU-IND as a second profile) |
@@ -801,8 +823,6 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 
 ## 12. Repository layout
 
-| Path | What | Owner |
-|---|---|---|
 | Path | What | Owner |
 |---|---|---|
 | `README.md` | This document | both |
@@ -849,7 +869,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | `fincen_sar_narrative_guidance.pdf` | FinCEN, *Guidance on Preparing a Complete & Sufficient SAR Narrative* |
 | `fincen_sar_filing_instructions.pdf` | FinCEN, SAR Electronic Filing Instructions |
 | `fatf_recommendations_2012.pdf` | FATF, *International Standards on Combating Money Laundering and the Financing of Terrorism & Proliferation* (the 40 Recommendations) |
-| `fatf_high_risk_jurisdictions.md` | FATF, *Jurisdictions under Increased Monitoring* ("grey list"), 24 Oct 2025 publication |
+| `fatf_high_risk_jurisdictions.md` | FATF, *Jurisdictions under Increased Monitoring* ("grey list"), 24 Oct 2025 publication. Reference only, not indexed: the detection table uses the newer June 2026 list |
 | `fatf_professional_money_laundering.pdf` | FATF, *Professional Money Laundering* report |
 
 `fatf-gafi.org` blocks scripted downloads (confirmed 403 on every direct
@@ -932,7 +952,7 @@ Every parameter, as deployed.
 | Refresh | `TARGET_LAG = '1 day'` on `COMPUTE_WH` |
 | Parsing | `AI_PARSE_DOCUMENT(..., {'mode': 'LAYOUT'})` |
 | Chunking | `SPLIT_TEXT_MARKDOWN_HEADER`, headers `#` / `##`, 2,000 characters, 300 overlap |
-| Corpus | 3 PDFs → 119 chunks (policy 11, FinCEN SAR narrative guidance 44, FinCEN filing instructions 64) |
+| Corpus | 5 PDFs → 471 chunks (FATF Recommendations 256, FATF PML 96, FinCEN filing 64, FinCEN narrative 44, policy 11); `fatf_high_risk_jurisdictions.md` is reference only, not indexed (deploy indexes `*.pdf`; it is the Oct 2025 list, older than `FATF_JURISDICTIONS`) |
 
 ### Semantic view (`AML_SEMANTIC_VIEW`)
 

@@ -9,7 +9,7 @@ and data/README.md expect.
 Usage:
     pip install -r requirements.txt
     python generate_data.py                                   # seed 42 -> ../data
-    python generate_data.py --seed 777 --output-dir ../data_holdout   # held-out set
+    python generate_data.py --seed 20259 --output-dir ../data_holdout # held-out set
 
 Data-grounding notes (what is actually calibrated against real sources vs.
 reasoned assumption):

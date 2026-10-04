@@ -39,3 +39,12 @@ board). VELOCITY's txn-level precision/recall gap mirrors the original
 dataset's pattern — it's a genuinely harder rule (bursty legitimate activity
 can look similar), not an artifact of tuning. These are the numbers to quote
 to judges, since this file was never used to calibrate any threshold.
+
+**Independence caveat (added on review).** The layering change above was chosen with the
+`PASS_THROUGH` threshold in mind, so this file's PASS_THROUGH score is not independent of the
+rule. Re-generating seed 20259 with the original 25–40% range scores PASS_THROUGH at
+**10/13 cases** (precision 1.00); every other rule is unchanged. Quote 10/13.
+
+Reproducibility: amounts, counts and planted cases reproduce from the seed; IDs (`uuid4`),
+timestamps (`datetime.now()`) and Faker descriptions do not, so files differ byte-for-byte
+between runs while every metric stays identical.

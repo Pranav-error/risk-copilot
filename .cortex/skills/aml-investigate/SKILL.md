@@ -44,7 +44,14 @@ the analyst's, and it is recorded with their name and reason (policy §9.1).
    SELECT PARSE_JSON(SNOWFLAKE.CORTEX.SEARCH_PREVIEW('AML_POLICY_SEARCH',
      '{"query": "<pattern in plain words>", "columns": ["SOURCE","SECTION","CHUNK"], "limit": 3}')):results;
    ```
-   Run one search for the internal policy clause and one for FinCEN/FATF guidance.
+   Run one search for the internal policy clause, restricted to the bank's policy (the corpus
+   also holds FATF and FinCEN documents that use the same words):
+   ```sql
+   SELECT PARSE_JSON(SNOWFLAKE.CORTEX.SEARCH_PREVIEW('AML_POLICY_SEARCH',
+     '{"query": "<pattern in plain words>", "columns": ["SOURCE","SECTION","CHUNK"], "limit": 3,
+       "filter": {"@eq": {"SOURCE": "internal_aml_policy.pdf"}}}')):results;
+   ```
+   and one unfiltered search for FinCEN / FATF guidance on the same pattern.
 
 ## Explain
 
