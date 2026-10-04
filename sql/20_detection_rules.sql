@@ -6,6 +6,8 @@
 -- FINDINGS and SAR_REPORTS keep pointing at the alert the analyst actually reviewed.
 -- Every "keep the best window" has a total order (score, then earliest, then txn id): with
 -- ties, Snowflake picks a different row each run and the same pattern gets a second alert.
+-- Scores are sums rounded to cents: on an engine that sums floats, equal windows otherwise
+-- differ in the last bit depending on row order (found on the held-out data in DuckDB).
 -- ponytail: a stale OPEN alert whose pattern no longer fires is kept, not removed; add a
 -- RESOLVED_BY_RERUN status if the data starts changing under existing alerts.
 
@@ -29,7 +31,7 @@ WITH dep AS (
               AND b.TXN_TS >= a.TXN_TS AND b.TXN_TS < a.TXN_TS + INTERVAL '7 days'
     GROUP BY a.ACCOUNT_ID, a.TXN_TS, a.TXN_ID
     HAVING COUNT(*) >= 3 AND SUM(b.AMOUNT) > 10000
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY COUNT(*) DESC, SUM(b.AMOUNT) DESC, a.TXN_TS, a.TXN_ID) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY COUNT(*) DESC, ROUND(SUM(b.AMOUNT), 2) DESC, a.TXN_TS, a.TXN_ID) = 1
 )
 SELECT 'STRUCTURING', ACCOUNT_ID, TXN_IDS, 'HIGH',
        OBJECT_CONSTRUCT('deposits', N, 'total', TOTAL, 'window_start', WINDOW_START,
@@ -46,7 +48,7 @@ WITH legs AS (   -- every transaction counts for both of its internal accounts
     SELECT TXN_ID, TO_ACCOUNT_ID, AMOUNT, TXN_TS FROM TRANSACTIONS WHERE TO_ACCOUNT_ID IS NOT NULL
 ), bursts AS (
     SELECT a.ACCOUNT_ID, a.TXN_ID AS ANCHOR, a.TXN_TS AS WINDOW_START,
-           COUNT(*) AS N, SUM(b.AMOUNT) AS VALUE
+           COUNT(*) AS N, ROUND(SUM(b.AMOUNT), 2) AS VALUE   -- cents: float sums must not break ties
     FROM legs a
     JOIN legs b ON b.ACCOUNT_ID = a.ACCOUNT_ID
                AND b.TXN_TS >= a.TXN_TS AND b.TXN_TS < a.TXN_TS + INTERVAL '24 hours'
@@ -118,7 +120,7 @@ WITH wires AS (
     WHERE a.LIST = 'GREY'
     GROUP BY a.ACCOUNT_ID, a.TXN_TS, a.TXN_ID
     HAVING SUM(b.AMOUNT) > 50000
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY SUM(b.AMOUNT) DESC, a.TXN_TS, a.TXN_ID) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY a.ACCOUNT_ID ORDER BY ROUND(SUM(b.AMOUNT), 2) DESC, a.TXN_TS, a.TXN_ID) = 1
 )
 SELECT 'GEO_RISK', ACCOUNT_ID, TXN_IDS, 'CRITICAL',
        OBJECT_CONSTRUCT('list', 'FATF black list', 'countries', COUNTRIES, 'total', TOTAL, 'policy', '6.2')

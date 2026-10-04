@@ -13,9 +13,9 @@ outputs from natural language questions."*
 | **What** | An AML copilot that takes an analyst from a fraud signal to a documented finding and a cited, machine-checked SAR, entirely inside Snowflake |
 | **Built with** | CoCo CLI (3 project skills), Snowpark, Cortex Search (hybrid: keyword + vector + reranker), Cortex Analyst + semantic view, Cortex Agent, `AI_COMPLETE` (claude-sonnet-4-5), Streamlit in Snowflake, RBAC + secure views |
 | **Detection** | 5 deterministic rules mapped to numbered policy clauses; the LLM never decides what is fraud |
-| **Measured** | On seeded data: every planted scheme caught except one; precision 0.75–1.00 per rule |
+| **Measured** | On a held-out dataset nothing was tuned against: 4 of 5 rules catch every planted scheme; pass-through 10/13; precision 0.71–1.00 |
 | **Audit-ready** | Append-only decisions by grant; every SAR's transaction citations machine-verified; auditors see PII masked, even inside AI answers |
-| **Tested** | 14 end-to-end tests on live Snowflake, 36 / 36 governance checks, a full redeploy from scratch, rule tests that are proven to fail on the bugs they guard |
+| **Tested** | Two datasets (one held out), 14 end-to-end tests on live Snowflake, 36 / 36 governance checks, a full redeploy from scratch, rule tests that are proven to fail on the bugs they guard |
 
 ## Contents
 
@@ -155,7 +155,7 @@ Requests flow top to bottom; every layer runs inside one Snowflake account.
 |---|---|---|
 | 1 · Data | Stages, `COPY INTO`, tables, file formats | ✅ Live on Snowflake |
 | 2 · Detection | SQL, Snowpark Python stored procedure | ✅ Live on Snowflake |
-| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (119 chunks, 3 documents) |
+| 3 · Evidence | Cortex Search, `AI_PARSE_DOCUMENT`, `SPLIT_TEXT_MARKDOWN_HEADER` | ✅ Live (471 chunks, 5 documents: policy, FinCEN, FATF) |
 | 3 · Evidence | Semantic view, Cortex Analyst, Cortex Agent | ✅ Live; answers verified against hand-written SQL |
 | 4 · Finding | Tables + role grants (append-only) | ✅ Live; append-only enforced by grants |
 | 5 · Governance | RBAC roles, secure views (masking), grants | ✅ Live; 36/36 role checks pass |
@@ -274,7 +274,7 @@ leaves Snowflake.
 
 ```mermaid
 flowchart LR
-    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance (2 PDFs)"] -->|"PUT"| S["Stage REG_DOCS"]
+    P["internal_aml_policy.pdf<br/>FinCEN SAR guidance (2 PDFs)<br/>FATF Recommendations + PML report"] -->|"PUT"| S["Stage REG_DOCS"]
     S -->|"AI_PARSE_DOCUMENT<br/>LAYOUT mode"| RT["REG_DOCS_RAW"]
     RT -->|"SPLIT_TEXT_MARKDOWN_HEADER<br/>2000 chars, 300 overlap"| CH["REG_DOC_CHUNKS<br/>source · section · chunk"]
     CH --> CS["Cortex Search service<br/>AML_POLICY_SEARCH"]
@@ -298,8 +298,14 @@ view (structured), to Cortex Search (documents), or both (section 4.4).
 Chunks keep their **source file and section header**. FinCEN chunks carry real section
 headers (*"Organizing Information in the SAR Narrative"*); the policy PDF is rendered from plain
 text, so its chunks carry the document title and the clause numbers (§3.3, §5.2 …) live in the
-chunk text, which is what answers cite. 119 chunks: policy 11, FinCEN guidance 44, FinCEN filing
-instructions 64.
+chunk text, which is what answers cite. 471 chunks: FATF Recommendations 256, FATF Professional
+Money Laundering 96, FinCEN filing instructions 64, FinCEN SAR narrative guidance 44, policy 11.
+
+**Clause lookups are filtered to the bank's policy.** Adding 352 FATF chunks made an unfiltered
+"policy section 6.2" search return FATF text, and the geo-risk alert lost its clause in the app.
+The app and `$aml-investigate` now pass `"filter": {"@eq": {"SOURCE": "internal_aml_policy.pdf"}}`
+for the clause and search regulator guidance separately. Checked for all five rules; the agent
+answers FATF questions from the new documents (e.g. Recommendation 12 on PEPs).
 
 The internal policy (`corpus/internal_aml_policy.md`) is a fictional bank's monitoring policy
 written for this project. Every detection rule is a numbered clause in it, which is what
@@ -547,6 +553,39 @@ threshold. **Caveat:** velocity and pass-through thresholds were calibrated on t
 these numbers are optimistic. Final numbers come from a second, differently seeded file that
 no threshold was tuned against.
 
+### Results on `data_holdout/` (41,630 transactions, 144 labelled, seed 20259 — nothing tuned against this file)
+
+| Rule | Alerts | Precision | Cases caught |
+|---|---|---|---|
+| STRUCTURING | 8 | 1.00 | 8 / 8 |
+| VELOCITY | 28 | 0.71 | 9 / 9 |
+| PASS_THROUGH | 13 | 1.00 | 13 / 13 |
+| ROUND_TRIP_CYCLE | 4 | 1.00 | all 4 cycles (12 accounts) |
+| GEO_RISK | 11 | 1.00 | 11 / 11 |
+
+Run with `python3 tests/run_on_holdout.py` (see `data_holdout/README.md`). Case recall is
+1.00 across every rule — every planted scheme produces at least one alert. VELOCITY's lower
+transaction-level precision reproduces on fresh data too, confirming it's a genuinely harder
+pattern (bursty legitimate activity looks similar) rather than an artifact of tuning.
+PASS_THROUGH's one miss on `data/` doesn't reproduce here, because the generator's
+rapid-layering outflow fraction was widened from 25–40% to 35–45% per step (worst case ~58%
+vs. the old worst case ~44%, which is what originally fell under the 50% threshold) — see
+`data_holdout/README.md` for the full explanation.
+
+**Caveat on PASS_THROUGH (checked by re-generation).** That generator change was made *after*
+seeing the rule's 50% threshold, so the held-out PASS_THROUGH result is not independent of the
+rule. Regenerating the same seed (20259) with the **original** 25–40% setting gives:
+
+| Rule | Held-out, adjusted generator | Held-out, original generator (independent) |
+|---|---|---|
+| PASS_THROUGH | 13 / 13 cases, precision 1.00 | **10 / 13 cases (0.77)**, precision 1.00 |
+| All other rules | as above | identical |
+
+**Numbers to quote:** structuring 8/8, geo-risk 11/11, round-trip all 4 cycles, velocity 9/9
+cases (precision 0.71), pass-through **10/13** — every rule with precision ≥ 0.71 on data no
+threshold was tuned against. The three pass-through misses send out under half their inflow;
+catching them means lowering the 50% line, which would need its own false-positive check.
+
 ---
 
 ## 9. Running it
@@ -611,7 +650,7 @@ What it creates:
 | Contract tables | `CUSTOMERS`, `ACCOUNTS`, `TRANSACTIONS`, `TXN_LABELS`, `FATF_JURISDICTIONS` |
 | Detection | `ALERTS`, `ALERT_CANDIDATES`, procedure `DETECT_ROUND_TRIPS()`, views `ALERT_QUEUE`, `ALERT_TXNS` |
 | Evaluation | views `RULE_TYPOLOGY`, `RULE_METRICS` |
-| Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (119 chunks), Cortex Search service `AML_POLICY_SEARCH` |
+| Evidence | `REG_DOCS_RAW`, `REG_DOC_CHUNKS` (471 chunks), Cortex Search service `AML_POLICY_SEARCH` |
 | Findings | `FINDINGS`, `SAR_REPORTS`, view `SAR_CITATION_CHECK` |
 | Question layer | views `ACCOUNT_ACTIVITY`, `ALERT_FACTS`; semantic view `AML_SEMANTIC_VIEW`; agent `AML_COPILOT` |
 | Governance | roles `AML_ANALYST`, `COMPLIANCE_OFFICER`, `AUDITOR`; secure views `CUSTOMER_PROFILE`, `SAR_REVIEW` |
@@ -707,6 +746,7 @@ translated, `tests/duck.py`); the rest run against live Snowflake.
 python3 detection/cycles.py           # cycle detector self-check
 python3 tests/test_rules_duckdb.py    # every rule on planted typologies: case recall 1.0, rerun stable
 python3 tests/run_on_data.py          # full pipeline on data/: RULE_METRICS + rerun stable
+python3 tests/run_on_holdout.py       # same, on data_holdout/ (second seed, honest numbers)
 
 # live on Snowflake
 python3 scripts/check_rerun_stable.py # rerun never adds, renumbers or resets alerts
@@ -742,6 +782,8 @@ streamlit run streamlit/streamlit_app.py                       # or run it local
 | After a detection rerun, every role lost access to the alert queue | `CREATE OR REPLACE VIEW` drops grants | `COPY GRANTS` on every recreated object; caught by running the governance check after the rerun check |
 | After a full redeploy the app crashed for every role | Recreating the Cortex Search service dropped its grant; the governance check never tested search | Governance re-grants it last; the check now covers search and the agent (proven to fail first) |
 | App showed "pyproject.toml file does not exist" in Snowsight, though headless tests passed | New Streamlits default to the **container** runtime (wants `pyproject.toml`); the app targets the **warehouse** runtime (`environment.yml`). Local tests can't see the runtime | `RUNTIME_NAME = 'SYSTEM$WAREHOUSE_RUNTIME'` on both apps; caught only by opening the app in the browser |
+| Geo-risk alert lost its policy clause after the FATF PDFs were indexed | Unfiltered search returned FATF text for "policy section 6.2" | Clause lookups filter on `SOURCE = internal_aml_policy.pdf` |
+| Rerun check failed intermittently on the held-out data (velocity) | Three windows summed to exactly $19,376.44; DuckDB sums floats, so the "largest" flipped with row order | Window scores rounded to cents before comparing; 40 shuffled reruns identical. Snowflake's exact decimals were never affected |
 | `COPY GRANTS` rejected on the semantic view / agent | Must be the last clause on a semantic view; agents don't accept it | Moved to the end; agent re-granted by `80_governance.sql` |
 
 ---
@@ -768,7 +810,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 
 | Limitation | Why it matters | What we'd do next |
 |---|---|---|
-| Velocity and pass-through thresholds were tuned on the same generated file they're scored on | Reported precision / recall is optimistic | Score on a second, differently seeded file nobody tuned against |
+| Velocity and pass-through thresholds were tuned on `data/` | `data/`'s own numbers are optimistic | **Done:** scored on `data_holdout/` (second seed). Pass-through scored again with the original generator settings, since the generator was adjusted for it: 10/13 — see section 8 |
 | Synthetic data from one generator | Patterns are cleaner than real transaction streams | Real (de-identified) data, or a second independent generator |
 | `FATF_JURISDICTIONS` is the June 2026 FATF list (3 black, 22 grey; cross-checked against two published lists on 2026-10-02) plus the bank's own list | FATF updates it three times a year; the next plenary is October 2026 | Refresh after each plenary; load the official FATF statement into `corpus/` |
 | Amounts read as USD although the generator labels them INR | The typologies are sized for US thresholds | Make currency and thresholds a jurisdiction setting (RBI / FIU-IND as a second profile) |
@@ -776,7 +818,6 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | Masking uses secure views (Standard edition) | Anyone with a direct grant on the base tables bypasses it | Enterprise tag-based masking policies |
 | AI explanations are constrained, not guaranteed | The model still writes the prose | Facts it must repeat are stored as data; transaction citations are machine-checked; a named human approves every SAR |
 | A stale OPEN alert whose pattern stops firing is kept, not closed | Reruns only add new alerts | A `RESOLVED_BY_RERUN` status once data starts changing under existing alerts |
-| FATF PDFs not yet in the search corpus | FATF questions get FinCEN / policy answers only | Add them by hand (fatf-gafi.org blocks scripted downloads) |
 
 ---
 
@@ -787,7 +828,9 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | `README.md` | This document | both |
 | `requirements.txt` | Python 3.11 dependencies for scripts, tests and running the app locally | Pranav |
 | `data/` | Generated synthetic CSVs + mapping notes (`data/README.md`) | Udith |
-| `corpus/` | Policy (`internal_aml_policy.md` / `.pdf`) + FinCEN PDFs for Cortex Search | Pranav |
+| `data_holdout/` | Second, differently-seeded dataset for honest held-out evaluation (`data_holdout/README.md`) | Udith |
+| `data_generator/` | The generator script that produces `data/` and `data_holdout/` | Udith |
+| `corpus/` | Policy (`internal_aml_policy.md` / `.pdf`) + FinCEN + FATF documents for Cortex Search | Pranav · Udith |
 | `sql/01_load_raw.sql` | Stages + `COPY INTO` raw tables | Pranav |
 | `sql/02_canonical.sql` | Raw → data contract | Pranav |
 | `sql/05_reference.sql` | FATF black / grey list (June 2026) + the bank's own high-risk list | Pranav |
@@ -812,6 +855,7 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | `tests/duck.py` | Runs the repo's SQL on DuckDB; shared rerun-stability check | Pranav |
 | `tests/test_rules_duckdb.py` | Every rule on planted typologies | Pranav |
 | `tests/run_on_data.py` | Full pipeline on `data/` with metrics | Pranav |
+| `tests/run_on_holdout.py` | Same pipeline on `data_holdout/` (second seed, honest numbers) | Udith |
 | `tests/test_app.py` | App renders per role, live | Pranav |
 | `tests/test_app_flow.py` | Escalate → SAR → approve through the UI, live; cleans up | Pranav |
 | `tests/test_app_chat.py` | Chat through the UI, live | Pranav |
@@ -824,7 +868,16 @@ with `--no-mcp` so personal MCP servers don't print connection noise into the re
 | `internal_aml_policy.md` / `.pdf` | Written for this project (fictional bank). The PDF is what gets indexed |
 | `fincen_sar_narrative_guidance.pdf` | FinCEN, *Guidance on Preparing a Complete & Sufficient SAR Narrative* |
 | `fincen_sar_filing_instructions.pdf` | FinCEN, SAR Electronic Filing Instructions |
-| *to add by hand* | FATF Recommendations; current FATF high-risk & monitored jurisdictions; FATF *Professional Money Laundering* (fatf-gafi.org blocks scripted downloads) |
+| `fatf_recommendations_2012.pdf` | FATF, *International Standards on Combating Money Laundering and the Financing of Terrorism & Proliferation* (the 40 Recommendations) |
+| `fatf_high_risk_jurisdictions.md` | FATF, *Jurisdictions under Increased Monitoring* ("grey list"), 24 Oct 2025 publication. Reference only, not indexed: the detection table uses the newer June 2026 list |
+| `fatf_professional_money_laundering.pdf` | FATF, *Professional Money Laundering* report |
+
+`fatf-gafi.org` blocks scripted downloads (confirmed 403 on every direct
+fetch attempt, including the live page itself, not just PDFs). The three
+FATF files above were retrieved via the Internet Archive's Wayback Machine,
+which mirrors the official FATF site's content byte-for-byte — same source,
+different retrieval path. See each file / `fatf_high_risk_jurisdictions.md`'s
+header for the exact snapshot URL and date.
 
 ---
 
@@ -845,8 +898,8 @@ output, 2–3 modular skills), and a PDF deck (≤5 MB) on the hackathon templat
 | ✅ | Semantic view + Cortex Analyst + Cortex Agent, answers verified | Pranav |
 | ✅ | Roles, append-only grants, PII masking (secure views), 36 / 36 checks | Pranav |
 | ✅ | Streamlit command centre, officer + auditor copies, full flow tested through the UI | Pranav |
-| ⏳ | Second, differently seeded dataset for held-out evaluation | Udith |
-| ⏳ | FATF PDFs into `corpus/` (download by hand from fatf-gafi.org) | Udith |
+| ✅ | Second, differently seeded dataset for held-out evaluation (`data_holdout/`, seed 20259) | Udith |
+| ✅ | FATF documents into `corpus/` (Recommendations, grey list, Professional Money Laundering) | Udith |
 | ✅ | Repo public | Pranav |
 | ✅ | FATF list refreshed to the June 2026 plenary | Pranav |
 | ⏳ | Deck on the hackathon template, demo video | both |
@@ -899,7 +952,7 @@ Every parameter, as deployed.
 | Refresh | `TARGET_LAG = '1 day'` on `COMPUTE_WH` |
 | Parsing | `AI_PARSE_DOCUMENT(..., {'mode': 'LAYOUT'})` |
 | Chunking | `SPLIT_TEXT_MARKDOWN_HEADER`, headers `#` / `##`, 2,000 characters, 300 overlap |
-| Corpus | 3 PDFs → 119 chunks (policy 11, FinCEN SAR narrative guidance 44, FinCEN filing instructions 64) |
+| Corpus | 5 PDFs → 471 chunks (FATF Recommendations 256, FATF PML 96, FinCEN filing 64, FinCEN narrative 44, policy 11); `fatf_high_risk_jurisdictions.md` is reference only, not indexed (deploy indexes `*.pdf`; it is the Oct 2025 list, older than `FATF_JURISDICTIONS`) |
 
 ### Semantic view (`AML_SEMANTIC_VIEW`)
 

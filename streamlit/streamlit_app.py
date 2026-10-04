@@ -200,7 +200,10 @@ def policy_text(clause):
     """The clause text from Cortex Search, so the analyst reads the rule, not our summary."""
     if not clause:
         return None
-    req = json.dumps({"query": f"policy section {clause} rule", "columns": ["SOURCE", "CHUNK"], "limit": 3})
+    # filtered to the bank's own policy: with FATF and FinCEN in the corpus, an unfiltered
+    # "policy section 6.2" query returns regulator text that merely mentions the same words
+    req = json.dumps({"query": f"policy section {clause} rule", "columns": ["SOURCE", "CHUNK"], "limit": 3,
+                      "filter": {"@eq": {"SOURCE": "internal_aml_policy.pdf"}}})
     hits = json.loads(q("SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(?, ?) AS R",
                         [f"{DB}.AML_POLICY_SEARCH", req])["R"][0])["results"]
     for h in hits:
