@@ -1,5 +1,5 @@
-AML analysts spend hours on every alert, pulling transactions, KYC records and policy documents together by hand before they can write anything up. We built a copilot that does this inside Snowflake, driven from CoCo CLI with three skills: aml-detect, aml-investigate and sar-draft.
+AML analysts spend hours per alert pulling transactions, KYC records and policy together by hand. Our copilot does it inside Snowflake, run from CoCo CLI with three skills: aml-detect, aml-investigate and sar-draft.
 
-Detection is plain SQL plus a Snowpark search for money moving in loops, so the model never decides what counts as fraud. It gathers the evidence, quotes the relevant policy through Cortex Search, and drafts a SAR only after a named analyst escalates the case. Every transaction the SAR cites is checked against the ledger.
+Detection is plain SQL plus a Snowpark search for money moving in loops, so the model never decides what is fraud. It gathers evidence, quotes policy through Cortex Search, and drafts a SAR only after a named analyst escalates. Every transaction the SAR cites is checked against the ledger.
 
-A Streamlit app lets auditors ask questions in plain English through a Cortex Agent, and they only ever see masked customer names. On a held-out dataset, four of our five rules caught every planted case; the fifth caught 10 of 13.
+Auditors use a Streamlit app with a Cortex Agent and see only masked customer names. On held-out data, four of five rules caught every planted case.
